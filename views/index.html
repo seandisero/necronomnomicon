@@ -15,8 +15,7 @@
 			<header>
 				<h1>disero family recipies</h1>
 			</header>
-			<div class="center-content" 
-				style="margin-bottom: 2rem; padding-right: 5px; padding-left: 5px;"> 
+			<div id="new-and-search" style="display: grid; margin-bottom: 1rem; padding-right: 5px; padding-left: 5px;"> 
 				{{ template "get-new-recipe-form" . }}
 			</div>
 			<div style="margin-bottom: 2rem; padding-right: 5px; padding-left: 5px;">
@@ -72,23 +71,51 @@
 {{ end }}
 
 {{ block "get-new-recipe-form" . }}
-<button 
-	hx-get="/recipe-form" 
-	hx-swap="outerHTML" 
-	class="btn-primary" 
-	style="max-width: 256px; margin-top: 0.5rem;">
-	new recipe
-</button>
+<div id="new-and-search" 
+	style="display: grid; grid-template-columns: 1fr 3fr; align-items: center; justify-content: center; padding-right: 5px; padding-left: 5px;"> 
+	<button hx-get="/recipe-form" 
+		hx-swap="innerHTML" 
+		hx-target="#new-and-search"
+		class="btn-primary" 
+		style="max-width: 256px;">
+		new recipe
+	</button>
+	<input id="searchbar" type="search"
+		name= "search" placeholder="start typing to search..."
+		style="width: auto; margin-left: 1rem; margin-right: 0rem; margin-top: 0; margin-bottom: 0;"
+		hx-post="/recipe-search"
+		hx-target="#recipe-grid-div"
+		hx-swap="outerHTML"
+		hx-trigger="input changed"
+	>
+</div>
 {{ end }}
 
 {{ block "new-recipe-form" . }}
-<form hx-post="/recipe" hx-swap="outerHTML" style="display: flex; flex-direction: column; max-width: 500px;">
+<form 
+	hx-post="/recipe" 
+	hx-swap="outerHTML" >
 	<input type="text" name="name" placeholder="recipe name...">
-	<textarea type="text" name="ingredients" placeholder="ingredients list...&#10 1 cup flour... ext"></textarea>
-	<textarea name="steps" placeholder="recipe instructions here..."></textarea>
-	<textarea name="notes" placeholder="notes on the recipe here..."></textarea>
-	<button type="submit">add recipe</button>
+	<textarea type="text" rows="5" name="ingredients" placeholder="ingredients list...&#10 1 cup flour... ext"></textarea>
+	<textarea name="steps" rows="5" placeholder="recipe instructions here..."></textarea>
+	<textarea name="notes" rows="5" placeholder="notes on the recipe here..."></textarea>
+	<div style="displey: flex; margin: 0 auto;">
+		<button class="btn-primary" type="submit" style="margin: 0 auto;">add recipe</button>
+		<button hx-get="/search-bar" 
+			hx-target="#new-and-search" 
+			hx-swap="innerHTML" 
+			style="margin: 0 auto;">
+			cancel
+		</button>
+	</div>
 </form>
+{{ end }}
+
+{{ block "search-bar" . }}
+<div>
+	<input id="searchbar" type="search"
+		name= "search" placeholder="start typing to search...">
+</div>
 {{ end }}
 
 {{ block "recipe-grid" . }}

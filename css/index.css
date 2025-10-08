@@ -12,7 +12,7 @@
   --accent-glow: rgba(0, 255, 136, 0.2);
   
   /* Text Colors */
-  --text-primary: #e6edf3;
+  --text-primary: #c4cdd5;
   --text-secondary: #8b949e;
   --text-muted: #6e7681;
   
@@ -79,6 +79,7 @@ hr {
 	margin-top: 0.5rem;
 }
 
+
 p {
   margin-bottom: 1rem;
   color: var(--text-secondary);
@@ -94,6 +95,14 @@ a {
 a:hover {
   color: var(--accent-secondary);
   text-decoration: underline;
+}
+
+ul {
+	padding-left: 3rem;
+}
+
+ol {
+	padding-left: 3rem;
 }
 
 /* Buttons */
@@ -126,15 +135,22 @@ button:hover, .btn:hover {
   box-shadow: 0 0 15px var(--accent-glow);
 }
 
+form {
+	display: flex; 
+	flex-direction: column; 
+}
+
 /* Input Fields */
 input, textarea, select {
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
+	background-color: var(--bg-secondary);
+	color: var(--text-primary);
   border: 1px solid var(--border-primary);
-  padding: 0.75rem;
+  padding: 0.66rem;
   border-radius: 6px;
   font-size: 1rem;
   transition: all 0.3s ease;
+	margin: 0.33rem auto 1rem auto;
+	width: 66%
 }
 
 input:focus, textarea:focus, select:focus {
@@ -151,7 +167,7 @@ input:focus, textarea:focus, select:focus {
   border: 1px solid var(--border-primary);
   border-radius: 8px;
   padding: 1.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0rem;
   transition: all 0.3s ease;
 }
 
