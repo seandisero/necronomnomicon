@@ -1,0 +1,108 @@
+{{ block "index" . }}
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.7/dist/htmx.min.js" integrity="sha384-ZBXiYtYQ6hJ2Y0ZNoYuI+Nq5MqWBr+chMrS/RkXpNzQCApHEhOt2aY8EJgqwHLkJ" crossorigin="anonymous"></script>
+		<title>disero recipe book</title>
+		<link rel="stylesheet" href="/css/index.css">
+	</head>
+	<body style="justify-content: center; align-items: center; margin: 0 auto;">
+		<nav>
+		</nav>
+		<div class="container">
+			<header>
+				<h1>disero family recipies</h1>
+			</header>
+			<div class="center-content" 
+				style="margin-bottom: 2rem; padding-right: 5px; padding-left: 5px;"> 
+				{{ template "get-new-recipe-form" . }}
+			</div>
+			<div style="margin-bottom: 2rem; padding-right: 5px; padding-left: 5px;">
+			{{ template "recipe-grid" . }}
+			</div>
+		</div>
+	</body>
+</html>
+{{ end }}
+
+{{ block "recipe" . }}
+<div id="recipe-instructions" class="recipe-content">
+	<div style="display: grid; grid-template-columns: 5fr 1fr;">
+		<h2>{{ .Name }}</h2>
+		<button 
+			hx-get="/recipe/grid" 
+			hx-swap="outerHTML" 
+			hx-target="#recipe-instructions"
+			style="displey: flex; margin: 0 auto;">
+			back
+		</button>
+	</div>
+	<hr/>
+	<h3>&nbsp;ingredients</h3>
+	<ul>
+		{{ range .Ingredients }}
+		{{ template "ingredient" . }}
+		{{ end }}
+	</ul>
+
+	<h3>&nbsp;steps</h3>
+	<ol>
+		{{ range .Steps }}
+		{{ template "step" . }}
+		{{ end }}
+	</ol>
+
+	<h3>&nbsp;notes</h3>
+	{{ .Notes }}
+</div>
+{{ end }}
+
+{{ block "ingredient" . }}
+<div style="display: flex;">
+	<li>{{ .Amount }} {{ .Measure }} {{ .Name }}</li>
+</div>
+{{ end }}
+
+{{ block "step" . }}
+<div>
+	<li>{{ . }}</li>
+</div>
+{{ end }}
+
+{{ block "get-new-recipe-form" . }}
+<button 
+	hx-get="/recipe-form" 
+	hx-swap="outerHTML" 
+	class="btn-primary" 
+	style="max-width: 256px; margin-top: 0.5rem;">
+	new recipe
+</button>
+{{ end }}
+
+{{ block "new-recipe-form" . }}
+<form hx-post="/recipe" hx-swap="outerHTML" style="display: flex; flex-direction: column; max-width: 500px;">
+	<input type="text" name="name" placeholder="recipe name...">
+	<textarea type="text" name="ingredients" placeholder="ingredients list...&#10 1 cup flour... ext"></textarea>
+	<textarea name="steps" placeholder="recipe instructions here..."></textarea>
+	<textarea name="notes" placeholder="notes on the recipe here..."></textarea>
+	<button type="submit">add recipe</button>
+</form>
+{{ end }}
+
+{{ block "recipe-grid" . }}
+<div id="recipe-grid-div" class="grid">
+	{{ range .Recipies }}
+	{{ template "card" . }}
+	{{ end }}
+</div>
+{{ end }}
+
+{{ block "card" . }}
+<div hx-get="/recipe?name={{ .Name }}" hx-target="#recipe-grid-div" hx-swap="outerHTML" class="card">
+		<h3 class="text-accent", style="text-align: center;">
+			{{ .Name }}
+		<h3/>
+	</div>
+{{ end }}
