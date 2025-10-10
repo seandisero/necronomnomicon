@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/seandisero/necronomnomicon/internal/cookbook"
