@@ -3,7 +3,9 @@ package main
 import (
 	"html/template"
 	"io"
+	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/seandisero/necronomnomicon/internal/cookbook"
@@ -24,6 +26,8 @@ func newTemplate() *Templates {
 }
 
 func main() {
+	port := os.Getenv("PORT")
+
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Static("/css", "css")
@@ -40,5 +44,5 @@ func main() {
 	e.GET("/search-bar", cb.HandlerGetSearchBar)
 	e.POST("/recipe-search", cb.HandlerSearchRecipes)
 
-	e.Logger.Fatal(e.Start(":3030"))
+	e.Logger.Fatal(e.Start(":" + port))
 }
