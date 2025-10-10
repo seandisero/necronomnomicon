@@ -1,3 +1,11 @@
+{{ block "recipe-search-grid" . }}
+<div id="recipe-grid-div" class="grid">
+	{{ range .Recipes }}
+		{{ template "card" . }}
+	{{ end }}
+</div>
+{{ end }}
+
 {{ block "recipe-grid" . }}
 <div id="recipe-grid-div" class="grid">
 	{{ range .Recipes }}

@@ -159,6 +159,27 @@ func (cb *Cookbook) HandlerGetSearchBar(c echo.Context) error {
 
 func (cb *Cookbook) HandlerSearchRecipes(c echo.Context) error {
 	name := c.FormValue("search")
+	if name == "" {
+		first := make([]Recipe, 20)
+		end := min(len(cb.Recipes), 20)
+		first = cb.Recipes[:end]
+		return c.Render(http.StatusOK, "recipe-grid", struct {
+			Recipes Recipes
+			Last    struct {
+				Recipe Recipe
+				Index  int
+			}
+		}{
+			Recipes: first,
+			Last: struct {
+				Recipe Recipe
+				Index  int
+			}{
+				Recipe: cb.Recipes[end],
+				Index:  21,
+			},
+		})
+	}
 	recipes := cb.GetFilteredRecipes(name)
-	return c.Render(http.StatusOK, "recipe-grid", recipes)
+	return c.Render(http.StatusOK, "recipe-search-grid", recipes)
 }
