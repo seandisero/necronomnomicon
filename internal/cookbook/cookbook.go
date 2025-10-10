@@ -2,71 +2,26 @@ package cookbook
 
 import (
 	"fmt"
+	"log/slog"
+	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/labstack/echo/v4"
 )
 
-type Ingredient struct {
-	Amount  int
-	Measure string
-	Name    string
-}
-
-func NewIngredient(name string, amount int, measure string) Ingredient {
-	return Ingredient{
-		Name:    name,
-		Amount:  amount,
-		Measure: measure,
-	}
-}
-
-type Recipe struct {
-	Name        string
-	Ingredients []Ingredient
-	Steps       []string
-	Notes       string
-}
-
-func NewRecipe(name string, ingredients []Ingredient, steps []string, notes string) Recipe {
-	return Recipe{
-		Name:        name,
-		Ingredients: ingredients,
-		Steps:       steps,
-		Notes:       notes,
-	}
-}
-
-type Recipies = []Recipe
-
-func ParseIngredients(ingredients string) ([]Ingredient, error) {
-	ret := make([]Ingredient, 0)
-	ingredientsList := strings.Split(ingredients, "\n")
-
-	for _, ingredient := range ingredientsList {
-		ingredientSplit := strings.SplitN(ingredient, " ", 3)
-		if len(ingredientSplit) != 3 {
-			return []Ingredient{}, fmt.Errorf("malformed ingredient")
-		}
-		intAmount, err := strconv.Atoi(ingredientSplit[0])
-		if err != nil {
-			return []Ingredient{}, err
-		}
-		ret = append(ret, NewIngredient(ingredientSplit[2], intAmount, ingredientSplit[1]))
-	}
-
-	return ret, nil
-}
-
 type Cookbook struct {
-	Recipies Recipies
+	Recipes Recipes
 }
 
 func NewCookbook() Cookbook {
-	return Cookbook{}
+	return Cookbook{
+		Recipes: make([]Recipe, 0),
+	}
 }
 
 func (c *Cookbook) GetRecipeByName(name string) (Recipe, error) {
-	for _, r := range c.Recipies {
+	for _, r := range c.Recipes {
 		if r.Name == name {
 			return r, nil
 		}
@@ -74,14 +29,136 @@ func (c *Cookbook) GetRecipeByName(name string) (Recipe, error) {
 	return Recipe{}, fmt.Errorf("recipe does not exist")
 }
 
-func (c *Cookbook) GetFilteredRecipies(name string) Cookbook {
+func (c *Cookbook) GetFilteredRecipes(name string) Cookbook {
 	cb := Cookbook{
-		Recipies: make([]Recipe, 0),
+		Recipes: make([]Recipe, 0),
 	}
-	for _, r := range c.Recipies {
+	for _, r := range c.Recipes {
 		if strings.Contains(r.Name, name) {
-			cb.Recipies = append(cb.Recipies, r)
+			cb.Recipes = append(cb.Recipes, r)
 		}
 	}
 	return cb
+}
+
+func (cb *Cookbook) HandlerGetHome(c echo.Context) error {
+	first := make([]Recipe, 20)
+	end := min(len(cb.Recipes), 20)
+	first = cb.Recipes[:end]
+	return c.Render(http.StatusOK, "index", struct {
+		Recipes Recipes
+		Last    struct {
+			Recipe Recipe
+			Index  int
+		}
+	}{
+		Recipes: first,
+		Last: struct {
+			Recipe Recipe
+			Index  int
+		}{
+			Recipe: cb.Recipes[end],
+			Index:  21,
+		},
+	})
+}
+
+func (cb *Cookbook) HendlerLoadMoreRecipes(c echo.Context) error {
+	index := c.Param("index")
+	idx, err := strconv.Atoi(index)
+	if err != nil {
+		return err
+	}
+	slog.Info("looking for index", "index found", index)
+	first := make([]Recipe, 20)
+	end := min(len(cb.Recipes), 21+idx)
+	first = cb.Recipes[idx : end-1]
+
+	return c.Render(http.StatusOK, "more-cards", struct {
+		Recipes Recipes
+		Last    struct {
+			Recipe Recipe
+			Index  int
+		}
+	}{
+		Recipes: first,
+		Last: struct {
+			Recipe Recipe
+			Index  int
+		}{
+			Recipe: cb.Recipes[end],
+			Index:  21 + idx,
+		},
+	})
+}
+
+func (cb *Cookbook) HandlerGetRecipeForm(c echo.Context) error {
+	return c.Render(http.StatusOK, "recipe-form", newRecipeFormData())
+}
+
+func (cb *Cookbook) HandlerPostRecipe(c echo.Context) error {
+	name := c.FormValue("name")
+	ingredients := c.FormValue("ingredients")
+	steps := c.FormValue("steps")
+	notes := c.FormValue("notes")
+
+	if name == "" {
+		c.Error(fmt.Errorf("no name provided"))
+		return c.Render(http.StatusBadRequest, "new-recipe-form", newRecipeFormData())
+	}
+
+	parsedIngredients, err := ParseIngredients(ingredients)
+	if err != nil {
+		c.Error(err)
+	}
+
+	recipe := NewRecipe(name, parsedIngredients, strings.Split(steps, "\n"), notes)
+
+	cb.Recipes = append(cb.Recipes, recipe)
+
+	var i any
+	return c.Render(http.StatusOK, "new-recipe-and-search-bar", i)
+
+}
+
+func (cb *Cookbook) HandlerGetRecipe(c echo.Context) error {
+	recipeName := c.FormValue("name")
+	slog.Info("requested recipe", "name", recipeName)
+	recipe, err := cb.GetRecipeByName(recipeName)
+	if err != nil {
+		return err
+	}
+	return c.Render(http.StatusOK, "recipe", recipe)
+}
+
+func (cb *Cookbook) HandlerGerRecipeGrid(c echo.Context) error {
+	first := make([]Recipe, 20)
+	end := min(len(cb.Recipes), 20)
+	first = cb.Recipes[:end]
+	return c.Render(http.StatusOK, "recipe-grid", struct {
+		Recipes Recipes
+		Last    struct {
+			Recipe Recipe
+			Index  int
+		}
+	}{
+		Recipes: first,
+		Last: struct {
+			Recipe Recipe
+			Index  int
+		}{
+			Recipe: cb.Recipes[end],
+			Index:  21,
+		},
+	})
+}
+
+func (cb *Cookbook) HandlerGetSearchBar(c echo.Context) error {
+	return c.Render(http.StatusOK, "recipe-search", struct{}{})
+}
+
+func (cb *Cookbook) HandlerSearchRecipes(c echo.Context) error {
+	name := c.FormValue("search")
+	recipes := cb.GetFilteredRecipes(name)
+	return c.Render(http.StatusOK, "recipe-grid", recipes)
 }

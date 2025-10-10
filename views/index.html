@@ -13,11 +13,9 @@
 		</nav>
 		<div class="container">
 			<header>
-				<h1>disero family recipies</h1>
+				<h1>disero family recipes</h1>
 			</header>
-			<div id="new-and-search" style="display: grid; margin-bottom: 1rem; padding-right: 5px; padding-left: 5px;"> 
-				{{ template "get-new-recipe-form" . }}
-			</div>
+				{{ template "new-recipe-and-search-bar" . }}
 			<div style="margin-bottom: 2rem; padding-right: 5px; padding-left: 5px;">
 			{{ template "recipe-grid" . }}
 			</div>
@@ -26,61 +24,28 @@
 </html>
 {{ end }}
 
-{{ block "recipe" . }}
-<div id="recipe-instructions" class="recipe-content">
-	<div style="display: grid; grid-template-columns: 5fr 1fr;">
-		<h2>{{ .Name }}</h2>
-		<button 
-			hx-get="/recipe/grid" 
-			hx-swap="outerHTML" 
-			hx-target="#recipe-instructions"
-			style="displey: flex; margin: 0 auto;">
-			back
+{{ block "new-recipe-and-search-bar" . }}
+<div id="new-and-search" style="display: grid; margin-bottom: 1rem; padding-right: 5px; padding-left: 5px;"> 
+	{{ template "recipe-search" . }}
+</div>
+{{ end }}
+
+{{ block "recipe-search" . }}
+	<div id="new-and-search" 
+		style="display: grid; grid-template-columns: 1fr 3fr; align-items: center; justify-content: center; padding-right: 5px; padding-left: 5px;"> 
+		<button hx-get="/recipe-form" 
+			hx-swap="innerHTML" 
+			hx-target="#new-and-search"
+			class="btn-primary" 
+			style="max-width: 256px;">
+			new recipe
 		</button>
+		{{ template "search-bar" . }}
 	</div>
-	<hr/>
-	<h3>&nbsp;ingredients</h3>
-	<ul>
-		{{ range .Ingredients }}
-		{{ template "ingredient" . }}
-		{{ end }}
-	</ul>
-
-	<h3>&nbsp;steps</h3>
-	<ol>
-		{{ range .Steps }}
-		{{ template "step" . }}
-		{{ end }}
-	</ol>
-
-	<h3>&nbsp;notes</h3>
-	{{ .Notes }}
-</div>
 {{ end }}
 
-{{ block "ingredient" . }}
-<div style="display: flex;">
-	<li>{{ .Amount }} {{ .Measure }} {{ .Name }}</li>
-</div>
-{{ end }}
-
-{{ block "step" . }}
-<div>
-	<li>{{ . }}</li>
-</div>
-{{ end }}
-
-{{ block "get-new-recipe-form" . }}
-<div id="new-and-search" 
-	style="display: grid; grid-template-columns: 1fr 3fr; align-items: center; justify-content: center; padding-right: 5px; padding-left: 5px;"> 
-	<button hx-get="/recipe-form" 
-		hx-swap="innerHTML" 
-		hx-target="#new-and-search"
-		class="btn-primary" 
-		style="max-width: 256px;">
-		new recipe
-	</button>
-	<input id="searchbar" type="search"
+{{ block "search-bar" . }}
+<input id="searchbar" type="search"
 		name= "search" placeholder="start typing to search..."
 		style="width: auto; margin-left: 1rem; margin-right: 0rem; margin-top: 0; margin-bottom: 0;"
 		hx-post="/recipe-search"
@@ -88,48 +53,5 @@
 		hx-swap="outerHTML"
 		hx-trigger="input changed"
 	>
-</div>
 {{ end }}
 
-{{ block "new-recipe-form" . }}
-<form 
-	hx-post="/recipe" 
-	hx-swap="outerHTML" >
-	<input type="text" name="name" placeholder="recipe name...">
-	<textarea type="text" rows="5" name="ingredients" placeholder="ingredients list...&#10 1 cup flour... ext"></textarea>
-	<textarea name="steps" rows="5" placeholder="recipe instructions here..."></textarea>
-	<textarea name="notes" rows="5" placeholder="notes on the recipe here..."></textarea>
-	<div style="displey: flex; margin: 0 auto;">
-		<button class="btn-primary" type="submit" style="margin: 0 auto;">add recipe</button>
-		<button hx-get="/search-bar" 
-			hx-target="#new-and-search" 
-			hx-swap="innerHTML" 
-			style="margin: 0 auto;">
-			cancel
-		</button>
-	</div>
-</form>
-{{ end }}
-
-{{ block "search-bar" . }}
-<div>
-	<input id="searchbar" type="search"
-		name= "search" placeholder="start typing to search...">
-</div>
-{{ end }}
-
-{{ block "recipe-grid" . }}
-<div id="recipe-grid-div" class="grid">
-	{{ range .Recipies }}
-	{{ template "card" . }}
-	{{ end }}
-</div>
-{{ end }}
-
-{{ block "card" . }}
-<div hx-get="/recipe?name={{ .Name }}" hx-target="#recipe-grid-div" hx-swap="outerHTML" class="card">
-		<h3 class="text-accent", style="text-align: center;">
-			{{ .Name }}
-		<h3/>
-	</div>
-{{ end }}

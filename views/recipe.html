@@ -1,0 +1,44 @@
+{{ block "recipe" . }}
+<div id="recipe-instructions" class="recipe-content">
+	<div style="display: grid; grid-template-columns: 5fr 1fr;">
+		<h2>{{ .Name }}</h2>
+		<button 
+			hx-get="/recipe/grid" 
+			hx-swap="outerHTML" 
+			hx-target="#recipe-instructions"
+			style="display: flex; margin: 0 auto; margin-bottom: 1rem;">
+			back
+		</button>
+	</div>
+	<hr/>
+	<h3>&nbsp;ingredients</h3>
+	<ul>
+		{{ range .Ingredients }}
+		{{ template "ingredient" . }}
+		{{ end }}
+	</ul>
+
+	<h3>&nbsp;steps</h3>
+	<ol>
+		{{ range .Steps }}
+		{{ template "step" . }}
+		{{ end }}
+	</ol>
+
+	<h3>&nbsp;notes</h3>
+	{{ .Notes }}
+</div>
+{{ end }}
+
+{{ block "ingredient" . }}
+<div style="display: flex;">
+	<li>{{ .Amount }} {{ .Measure }} {{ .Name }}</li>
+</div>
+{{ end }}
+
+{{ block "step" . }}
+<div>
+	<li>{{ . }}</li>
+</div>
+{{ end }}
+

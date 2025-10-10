@@ -1,0 +1,32 @@
+{{ block "recipe-grid" . }}
+<div id="recipe-grid-div" class="grid">
+	{{ range .Recipes }}
+		{{ template "card" . }}
+	{{ end }}
+	{{ template "last-card" .Last }}
+</div>
+{{ end }}
+
+{{ block "last-card" . }}
+<div id="last-card{{ .Index }}"
+	hx-get="/recipe?name={{ .Recipe.Name }}" 
+	hx-target="#recipe-grid-div" 
+	hx-swap="outerHTML" class="card">
+	<h3 class="text-accent", 
+		style="text-align: center;"
+		hx-get="/recipe/load/{{ .Index }}"
+		hx-trigger="revealed"
+		hx-swap="afterend"
+		hx-target="#last-card{{ .Index }}"
+	>
+		{{ .Recipe.Name }}
+	</h3>
+</div>
+{{ end }}
+
+{{ block "more-cards" . }}
+	{{ range .Recipes }}
+		{{ template "card" . }}
+	{{ end }}
+	{{ template "last-card" .Last }}
+{{ end }}

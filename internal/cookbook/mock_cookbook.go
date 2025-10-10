@@ -2,7 +2,7 @@ package cookbook
 
 func MakeMockCookbook() Cookbook {
 	return Cookbook{
-		Recipies: []Recipe{
+		Recipes: []Recipe{
 			// Breakfast
 			NewRecipe(
 				"classic pancakes",

@@ -1,0 +1,19 @@
+{{ block "recipe-form" . }}
+<form 
+	hx-post="/recipe" 
+	hx-swap="outerHTML" >
+	<input type="text" name="name" placeholder="recipe name...">
+	<textarea type="text" rows="5" name="ingredients" placeholder="ingredients list...&#10 1 cup flour... ext"></textarea>
+	<textarea name="steps" rows="5" placeholder="recipe instructions here..."></textarea>
+	<textarea name="notes" rows="5" placeholder="notes on the recipe here..."></textarea>
+	<div style="displey: flex; margin: 0 auto;">
+		<button class="btn-primary" type="submit" style="margin: 0 auto;">add recipe</button>
+		<button hx-get="/search-bar" 
+			hx-target="#new-and-search" 
+			hx-swap="innerHTML" 
+			style="margin: 0 auto;">
+			cancel
+		</button>
+	</div>
+</form>
+{{ end }}

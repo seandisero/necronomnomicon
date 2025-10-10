@@ -34,7 +34,7 @@
 
 header {
 	background-color: var(--bg-secondary);
-	boarder-radius: 8px;
+	border-radius: 8px;
 	text-align: center;
 }
 
@@ -161,7 +161,7 @@ input:focus, textarea:focus, select:focus {
 
 /* Cards */
 .card {
-  align-text: center;
+  text-align: center;
   width: 100%;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-primary);
@@ -304,9 +304,10 @@ pre {
 /* } */
 
 .recipe-content {
-	background-color: #1c1c1c;
+	background-color: var(--bg-secondary);
 	padding: 30px;
-	border-radius: 32px;
+	border-radius: 8px;
+	border: 1px solid var(--border-primary);
 	margin-bottom: 40px;
 }
 
