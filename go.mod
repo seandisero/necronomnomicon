@@ -2,7 +2,10 @@ module github.com/seandisero/necronomnomicon
 
 go 1.24.7
 
-require github.com/labstack/echo/v4 v4.13.4
+require (
+	github.com/joho/godotenv v1.5.1
+	github.com/labstack/echo/v4 v4.13.4
+)
 
 require (
 	github.com/a-h/parse v0.0.0-20250122154542-74294addb73e // indirect

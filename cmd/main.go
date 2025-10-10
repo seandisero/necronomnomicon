@@ -3,8 +3,10 @@ package main
 import (
 	"html/template"
 	"io"
+	"log"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/seandisero/necronomnomicon/internal/cookbook"
@@ -25,7 +27,11 @@ func newTemplate() *Templates {
 }
 
 func main() {
+	godotenv.Load()
 	port := os.Getenv("PORT")
+	if port == "" {
+		log.Fatal("could not get port")
+	}
 
 	e := echo.New()
 	e.Use(middleware.Logger())
