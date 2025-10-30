@@ -3,7 +3,10 @@ package main
 import (
 	"database/sql"
 	"log"
+	"log/slog"
 	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
@@ -14,18 +17,24 @@ import (
 	"github.com/seandisero/necronomnomicon/internal/cookbook"
 	"github.com/seandisero/necronomnomicon/internal/tmpl"
 
-	_ "github.com/tursodatabase/libsql-client-go/libsql"
+	"github.com/tursodatabase/go-libsql"
 )
 
-func getDB() (*sql.DB, error) {
-	db_url := os.Getenv("DB_URL")
-	db_token := os.Getenv("DB_TOKEN")
-	db, err := sql.Open("libsql", db_url+"?authToken="+db_token)
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
-}
+// func getDB() (*sql.DB, error) {
+// 	dbName := "necro.db"
+// 	dir, err := os.MkdirTemp("", "libsql-*")
+// 	if err != nil {
+// 		slog.Error("could not make temp dir for necro db", "error", err)
+// 		return nil, err
+// 	}
+// 	db_url := os.Getenv("DB_URL")
+// 	db_token := os.Getenv("DB_TOKEN")
+// 	db, err := sql.Open("libsql", db_url+"?authToken="+db_token)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return db, nil
+// }
 
 func OptionalJWTMiddeware() echo.MiddlewareFunc {
 	config := echojwt.Config{
@@ -48,15 +57,18 @@ func OptionalJWTMiddeware() echo.MiddlewareFunc {
 	return echojwt.WithConfig(config)
 }
 
-func main() {
-	godotenv.Load()
-	port := os.Getenv("PORT")
-	if port == "" {
-		log.Fatal("could not get port")
+func NonOptionalJWTMiddleware() echo.MiddlewareFunc {
+	jwtConfig := echojwt.Config{
+		SigningKey:  []byte(auth.TokenSecretString),
+		TokenLookup: "cookie:necro-auth",
+		NewClaimsFunc: func(c echo.Context) jwt.Claims {
+			return new(jwt.RegisteredClaims)
+		},
 	}
+	return echojwt.WithConfig(jwtConfig)
+}
 
-	e := echo.New()
-
+func EchoLogger() echo.MiddlewareFunc {
 	loggerConfig := middleware.LoggerConfig{
 		Skipper: middleware.DefaultSkipper,
 		Format: `{"status":${status},` +
@@ -64,39 +76,18 @@ func main() {
 			`"error":"${error}","latency":${latency},"latency_human":"${latency_human}"` +
 			`,"bytes_in":${bytes_in},"bytes_out":${bytes_out}}` + "\n",
 	}
-	e.Use(middleware.LoggerWithConfig(loggerConfig))
+	return middleware.LoggerWithConfig(loggerConfig)
+}
 
+func SetupRouting(e *echo.Echo, cb *cookbook.Cookbook) {
 	e.Static("/css", "css")
 	e.Renderer = tmpl.NewTemplate()
 
-	db, err := getDB()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	_, err = db.Exec("PRAGMA foreign_keys = ON;")
-	if err != nil {
-		log.Fatal("could not enable foreign keys")
-	}
-	// cb := cookbook.MakeMockCookbook()
-	// cb.DB = database.New(db)
-	cb := cookbook.NewCookbook(db)
-
+	e.Use(EchoLogger())
 	e.Use(OptionalJWTMiddeware())
 
 	r := e.Group("")
-	jwtConfig := echojwt.Config{
-		SigningKey:  []byte(auth.TokenSecretString),
-		TokenLookup: "cookie:necro-auth",
-		ErrorHandler: func(c echo.Context, err error) error {
-			return nil
-		},
-		NewClaimsFunc: func(c echo.Context) jwt.Claims {
-			return new(jwt.RegisteredClaims)
-		},
-	}
-	r.Use(echojwt.WithConfig(jwtConfig))
+	r.Use(NonOptionalJWTMiddleware())
 
 	e.GET("/", cb.HandlerGetHome)
 	e.GET("/main", cb.HandlerGetMainPage)
@@ -109,12 +100,55 @@ func main() {
 	e.POST("/signup", cb.HandlerCreateUser)
 
 	e.GET("/recipe", cb.HandlerGetRecipe)
-	e.POST("/recipe", cb.HandlerPostRecipe)
+	r.POST("/recipe", cb.HandlerPostRecipe)
 
 	e.GET("/recipe/load/:index", cb.HendlerLoadMoreRecipes)
 	e.GET("/recipe/grid", cb.HandlerGetRecipeGrid)
 	e.GET("/recipe-form", cb.HandlerGetRecipeForm)
 	e.POST("/recipe-search", cb.HandlerSearchRecipes)
+}
+
+func main() {
+	godotenv.Load()
+	port := os.Getenv("PORT")
+	if port == "" {
+		log.Fatal("could not get port")
+	}
+
+	dbName := "necro.db"
+	dir, err := os.MkdirTemp("", "libsql-*")
+	if err != nil {
+		slog.Error("could not make temp dir for necro db", "error", err)
+		os.Exit(1)
+	}
+	defer os.RemoveAll(dir)
+
+	dbPath := filepath.Join(dir, dbName)
+	slog.Info("file path for db", "path", dbPath)
+
+	db_url := os.Getenv("DB_URL")
+	db_token := os.Getenv("DB_TOKEN")
+
+	connector, err := libsql.NewEmbeddedReplicaConnector(dbPath, db_url,
+		libsql.WithAuthToken(db_token),
+		libsql.WithSyncInterval(30*time.Minute),
+	)
+	if err != nil {
+		slog.Error("error creating connector", "error", err)
+		os.Exit(1)
+	}
+
+	db := sql.OpenDB(connector)
+	defer db.Close()
+
+	_, err = db.Exec("PRAGMA foreign_keys = ON;")
+	if err != nil {
+		log.Fatal("could not enable foreign keys")
+	}
+
+	cb := cookbook.NewCookbook(db)
+	e := echo.New()
+	SetupRouting(e, &cb)
 
 	e.Logger.Fatal(e.Start(":" + port))
 }

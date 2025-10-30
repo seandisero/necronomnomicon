@@ -2,7 +2,6 @@ package cookbook
 
 import (
 	"fmt"
-	"log/slog"
 	"strconv"
 	"strings"
 )
@@ -28,11 +27,10 @@ func ParseIngredients(ingredients string) ([]Ingredient, error) {
 			return nil, fmt.Errorf("must provide ingredients list")
 		}
 	}
-	ret := make([]Ingredient, len(ingredients))
+	ret := make([]Ingredient, len(ingredientsList))
 
 	for i, ingredient := range ingredientsList {
 		ingredientSplit := strings.SplitN(ingredient, " ", 3)
-		slog.Error("malformed ingredient", "split len", len(ingredientSplit))
 		if len(ingredientSplit) != 3 {
 			return []Ingredient{}, fmt.Errorf("malformed ingredient: must be number measure name")
 		}

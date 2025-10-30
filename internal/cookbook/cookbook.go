@@ -2,7 +2,6 @@ package cookbook
 
 import (
 	"database/sql"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -53,7 +52,7 @@ func (c *Cookbook) GetFilteredRecipes(name string) Cookbook {
 
 func getIDFromContext(c echo.Context) (int64, error) {
 	if c.Get("user") == nil {
-		fmt.Println("user was nil")
+		slog.Info("c.Get('user') is nil, user is not logged in")
 		return -1, nil
 	}
 	user := c.Get("user").(*jwt.Token)
@@ -65,9 +64,6 @@ func getIDFromContext(c echo.Context) (int64, error) {
 }
 
 func (cb *Cookbook) HandlerGetHome(c echo.Context) error {
-	for _, r := range cb.Recipes {
-		fmt.Println(r.Name)
-	}
 	userID, err := getIDFromContext(c)
 	if err != nil {
 		slog.Error("error getting id from context", "error", err)
