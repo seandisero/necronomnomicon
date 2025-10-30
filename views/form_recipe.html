@@ -1,0 +1,48 @@
+{{ block "recipe-form" . }}
+<form 
+	hx-post="/recipe" 
+	hx-target="#recipes"
+	hx-swap="innerHTML" >
+	<input 
+		type="text" 
+		name="name" 
+		placeholder="recipe name..." 
+		class="{{ if .ErrorName }}input-error{{ end }}"
+		value="{{ if .Name }}{{ .Name }}{{ end }}">
+	{{ if .ErrorName }}<span class="error-message">{{ .ErrorName }}</span>{{ end }}
+	<textarea 
+		type="text" 
+		rows="5" 
+		name="ingredients" 
+		placeholder="ingredients list...&#10 1 cup flour... ext"
+		class="{{ if .ErrorIngredients }}input-error{{ end }}"
+	>{{ if .Ingredients }}{{ .Ingredients }}{{ end }}</textarea>
+	{{ if .ErrorIngredients }}<span class="error-message">{{ .ErrorIngredients }}</span>{{ end }}
+	<textarea 
+		name="steps" 
+		rows="5" 
+		placeholder="recipe instructions here..."
+	>{{ if .Steps }}{{ .Steps }}{{ end }}</textarea>
+	{{ if .ErrorSteps }}<span class="error-message"
+	>{{ .ErrorSteps }}</span>{{ end }}
+	<textarea 
+		name="notes" 
+		rows="5" 
+		placeholder="notes on the recipe here..."
+	>{{ if .Notes }}{{ .Notes }}{{ end }}</textarea>
+	{{ if .ErrorNotes }}<span class="error-message">{{ .ErrorNotes }}</span>{{ end }}
+	<div style="displey: flex; margin: 0 auto;">
+		<button class="btn-primary" 
+			type="submit" 
+			style="margin: 0 auto;">
+			add recipe
+		</button>
+		<button hx-get="/main" 
+			hx-target="#main-page"
+			hx-swap="innerHTML" 
+			style="margin: 0 auto;">
+			cancel
+		</button>
+	</div>
+</form>
+{{ end }}

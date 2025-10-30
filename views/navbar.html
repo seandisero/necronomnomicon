@@ -1,0 +1,33 @@
+{{ block "nav-bar" . }}
+<nav>
+	<div>
+		{{ template "login-bar" . }}
+		{{ if .IsAuthenticated }}
+		<button hx-get="/recipe-form" 
+			hx-swap="innerHTML" 
+			hx-target="#recipes"
+			class="btn-primary" 
+			style="max-width: 256px;">
+			new recipe
+		</button>	
+		{{ end }}
+		{{ template "search-bar" . }}
+	</div>
+</nav>
+{{ end }}
+
+{{ block "login-bar" . }}
+{{ if .IsAuthenticated }}
+<button hx-post="/logout"
+	hx-target="body"
+	hx-swap="innerHTML">
+	logout 
+</button>
+{{ else }}
+<button hx-get="/login"
+	hx-target="body"
+	hx-swap="innerHTML"> 
+	login 
+</button>
+{{ end }}
+{{ end }}

@@ -2,14 +2,15 @@ package cookbook
 
 import (
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 )
 
 type Ingredient struct {
-	Amount  int
-	Measure string
-	Name    string
+	Amount  int    `json:"amount"`
+	Measure string `json:"measure"`
+	Name    string `json:"name"`
 }
 
 func NewIngredient(name string, amount int, measure string) Ingredient {
@@ -21,19 +22,25 @@ func NewIngredient(name string, amount int, measure string) Ingredient {
 }
 
 func ParseIngredients(ingredients string) ([]Ingredient, error) {
-	ret := make([]Ingredient, 0)
 	ingredientsList := strings.Split(ingredients, "\n")
+	if len(ingredientsList) <= 1 {
+		if ingredientsList[0] == "" {
+			return nil, fmt.Errorf("must provide ingredients list")
+		}
+	}
+	ret := make([]Ingredient, len(ingredients))
 
-	for _, ingredient := range ingredientsList {
+	for i, ingredient := range ingredientsList {
 		ingredientSplit := strings.SplitN(ingredient, " ", 3)
+		slog.Error("malformed ingredient", "split len", len(ingredientSplit))
 		if len(ingredientSplit) != 3 {
-			return []Ingredient{}, fmt.Errorf("malformed ingredient")
+			return []Ingredient{}, fmt.Errorf("malformed ingredient: must be number measure name")
 		}
 		intAmount, err := strconv.Atoi(ingredientSplit[0])
 		if err != nil {
-			return []Ingredient{}, err
+			return []Ingredient{}, fmt.Errorf("start or line must be a number")
 		}
-		ret = append(ret, NewIngredient(ingredientSplit[2], intAmount, ingredientSplit[1]))
+		ret[i] = NewIngredient(ingredientSplit[2], intAmount, ingredientSplit[1])
 	}
 
 	return ret, nil

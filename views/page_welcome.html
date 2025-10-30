@@ -1,0 +1,13 @@
+{{ block "welcome-page" . }}
+<div>
+	<h1>welcome {{ .Username }}</h1>
+
+	<div style="displey: flex; margin: 0 auto;">
+		<button hx-get="/main" 
+			hx-swap="innerHTML" 
+			hx-target="#main-page">
+			nice
+		</button>
+	</div>
+</div>
+{{ end }}

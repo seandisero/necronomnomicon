@@ -1,40 +1,44 @@
+{{ block "recipe-grid" . }}
+<div id="recipe-grid-div" class="grid">
+	{{ range .GridData.Cards }}
+		{{ template "card" . }}
+	{{ end }}
+	{{ if .GridData.DrawLastCard }}
+		{{ template "last-card" .GridData }}
+	{{ end }}
+</div>
+{{ end }}
+
+{{ block "last-card" . }}
+<div id="last-card{{ .Current }}"
+	hx-get="/recipe?name={{ .LastCard.Name }}" 
+	hx-target="#recipe-grid-div" 
+	hx-swap="outerHTML" class="card">
+	<h3 class="text-accent", 
+		style="text-align: center;"
+		hx-get="/recipe/load/{{ .Current }}"
+		hx-trigger="revealed"
+		hx-swap="afterend"
+		hx-target="#last-card{{ .Current }}"
+	>
+		{{ .LastCard.Name }}
+	</h3>
+</div>
+{{ end }}
+
+{{ block "more-cards" . }}
+	{{ range .Cards }}
+		{{ template "card" . }}
+	{{ end }}
+	{{ if .DrawLastCard }}
+		{{ template "last-card" . }}
+	{{ end }}
+{{ end }}
+
 {{ block "recipe-search-grid" . }}
 <div id="recipe-grid-div" class="grid">
 	{{ range .Recipes }}
 		{{ template "card" . }}
 	{{ end }}
 </div>
-{{ end }}
-
-{{ block "recipe-grid" . }}
-<div id="recipe-grid-div" class="grid">
-	{{ range .Recipes }}
-		{{ template "card" . }}
-	{{ end }}
-	{{ template "last-card" .Last }}
-</div>
-{{ end }}
-
-{{ block "last-card" . }}
-<div id="last-card{{ .Index }}"
-	hx-get="/recipe?name={{ .Recipe.Name }}" 
-	hx-target="#recipe-grid-div" 
-	hx-swap="outerHTML" class="card">
-	<h3 class="text-accent", 
-		style="text-align: center;"
-		hx-get="/recipe/load/{{ .Index }}"
-		hx-trigger="revealed"
-		hx-swap="afterend"
-		hx-target="#last-card{{ .Index }}"
-	>
-		{{ .Recipe.Name }}
-	</h3>
-</div>
-{{ end }}
-
-{{ block "more-cards" . }}
-	{{ range .Recipes }}
-		{{ template "card" . }}
-	{{ end }}
-	{{ template "last-card" .Last }}
 {{ end }}

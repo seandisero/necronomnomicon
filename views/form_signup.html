@@ -1,0 +1,21 @@
+{{ block "signup-form" . }}
+<div id="signup-page">
+	<form hx-post="/signup"
+		hx-swap="innerHTML"
+		hx-target="#main-page">
+		<input type="text" name="name" placeholder="name...">
+		<input type="text" name="password" placeholder="password...">
+		<div style="displey: flex; margin: 0 auto;">
+			<button class="btn-primary" 
+				type="submit" 
+				style="margin: 0 auto;">
+				submit</button>
+			<button hx-get="/main" 
+				hx-swap="innerHTML" 
+				hx-target="#main-page">
+				cancel
+			</button>
+		</div>
+	</form>
+</div>
+{{ end }}

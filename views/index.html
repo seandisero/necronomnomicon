@@ -5,53 +5,14 @@
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.7/dist/htmx.min.js" integrity="sha384-ZBXiYtYQ6hJ2Y0ZNoYuI+Nq5MqWBr+chMrS/RkXpNzQCApHEhOt2aY8EJgqwHLkJ" crossorigin="anonymous"></script>
-		<title>disero recipe book</title>
+		<title>necronomnomicon</title>
 		<link rel="stylesheet" href="/css/index.css">
 	</head>
 	<body style="justify-content: center; align-items: center; margin: 0 auto;">
-		<nav>
-		</nav>
-		<div class="container">
-			<header>
-				<h1>disero family recipes</h1>
-			</header>
-				{{ template "new-recipe-and-search-bar" . }}
-			<div style="margin-bottom: 2rem; padding-right: 5px; padding-left: 5px;">
-			{{ template "recipe-grid" . }}
-			</div>
+		{{ template "nav-bar" . }}
+		<div id="main-page" class="container">
+			{{ template "main-page" . }}
 		</div>
 	</body>
 </html>
 {{ end }}
-
-{{ block "new-recipe-and-search-bar" . }}
-<div id="new-and-search" style="display: grid; margin-bottom: 1rem; padding-right: 5px; padding-left: 5px;"> 
-	{{ template "recipe-search" . }}
-</div>
-{{ end }}
-
-{{ block "recipe-search" . }}
-	<div id="new-and-search" 
-		style="display: grid; grid-template-columns: 1fr 3fr; align-items: center; justify-content: center; padding-right: 5px; padding-left: 5px;"> 
-		<button hx-get="/recipe-form" 
-			hx-swap="innerHTML" 
-			hx-target="#new-and-search"
-			class="btn-primary" 
-			style="max-width: 256px;">
-			new recipe
-		</button>
-		{{ template "search-bar" . }}
-	</div>
-{{ end }}
-
-{{ block "search-bar" . }}
-<input id="searchbar" type="search"
-		name= "search" placeholder="start typing to search..."
-		style="width: auto; margin-left: 1rem; margin-right: 0rem; margin-top: 0; margin-bottom: 0;"
-		hx-post="/recipe-search"
-		hx-target="#recipe-grid-div"
-		hx-swap="outerHTML"
-		hx-trigger="input changed"
-	>
-{{ end }}
-
