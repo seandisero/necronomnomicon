@@ -1,6 +1,7 @@
 package cookbook
 
 import (
+	"database/sql"
 	"fmt"
 	"log/slog"
 
@@ -29,7 +30,8 @@ func NewPageData(authenticated bool, recipeData RecipeGridData) *PageData {
 
 func (cb *Cookbook) drawRecipeData(c echo.Context, startIndex int, id int64) (RecipeGridData, error) {
 	// TODO: filter out recipes for user id
-	userRecipes, err := cb.DB.GetAllRecipes(c.Request().Context())
+	requestUserID := sql.NullInt64{Int64: id, Valid: true}
+	userRecipes, err := cb.DB.GetAllUserRecipes(c.Request().Context(), requestUserID)
 	if err != nil {
 		return RecipeGridData{}, err
 	}

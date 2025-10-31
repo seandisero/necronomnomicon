@@ -14,7 +14,7 @@ import (
 )
 
 func (cb *Cookbook) HandlerGetRecipe(c echo.Context) error {
-	userId, err := getIDFromContext(c)
+	userID, err := getIDFromContext(c)
 	idString := c.Param("id")
 	id, err := strconv.ParseInt(idString, 10, 64)
 	dbRecipe, err := cb.DB.GetRecipeByID(c.Request().Context(), id)
@@ -29,7 +29,7 @@ func (cb *Cookbook) HandlerGetRecipe(c echo.Context) error {
 		UserID int64
 		Recipe
 	}{
-		userId,
+		userID,
 		recipe,
 	}
 	return c.Render(http.StatusOK, "recipe", returnParams)
@@ -81,75 +81,68 @@ func (cb *Cookbook) HandlerDeleteRecipe(c echo.Context) error {
 }
 
 func (cb *Cookbook) HandlerEditRecipe(c echo.Context) error {
-	userID, err := getIDFromContext(c)
+	formData := formDataFromContext(c)
+	formData.IsEdit = true
+
 	idString := c.Param("id")
 	recipeId, err := strconv.ParseInt(idString, 10, 64)
+	if err != nil {
+		return ReturnWithFormData(c, formData, fmt.Errorf("internal server error"))
+	}
 
-	name := c.FormValue("name")
-	ingredients := c.FormValue("ingredients")
-	steps_string := c.FormValue("steps")
-	notes := c.FormValue("notes")
+	userID, err := getIDFromContext(c)
+	if err != nil {
+		slog.Error("user trying to post recipe without credentials", "error", err)
+		ReturnWithFormData(c, formData, fmt.Errorf("unauthorized"))
+	}
 
+	editedRecipe, err := recipeFromFormData(formData)
+	if err != nil {
+		return ReturnWithFormData(c, formData, err)
+	}
+
+	params := database.GetUsersRecipeByIDParams{
+		ID:        recipeId,
+		CreatorID: sql.NullInt64{Int64: userID, Valid: true},
+	}
+	dbRecipe, err := cb.DB.GetUsersRecipeByID(c.Request().Context(), params)
 	if err != nil {
 		slog.Error("error editing recipe", "error", err)
-		return err
-	}
-	recipe, err := cb.DB.GetRecipeByID(c.Request().Context(), recipeId)
-	if err != nil {
-		slog.Error("error editing recipe", "error", err)
-		return err
+		return ReturnWithFormData(c, formData, fmt.Errorf("internal server error"))
 	}
 
-	if !recipe.CreatorID.Valid {
-		slog.Error("error editing recipe", "error", "unauthorized")
-		return c.NoContent(http.StatusUnauthorized)
-	}
-	if userID != recipe.CreatorID.Int64 {
-		slog.Error("error editing recipe", "error", "unauthorized")
-		return c.NoContent(http.StatusUnauthorized)
+	if cb.RecipeExists(c, editedRecipe) && dbRecipe.Name != editedRecipe.Name {
+		return ReturnWithFormData(c, formData, fmt.Errorf("name already exists"))
 	}
 
-	newFormData := EditRecipeFormData(recipeId, name, ingredients, steps_string, notes)
-
-	if name == "" {
-		return ReturnWithFormData(c, newFormData, fmt.Errorf("must have a name"))
-	}
-
-	edited_recipe, err := CreateRecipe(name, ingredients, steps_string, notes)
-	if err != nil {
-		slog.Error("problem creating recipe", "error", err)
-		return ReturnWithFormData(c, newFormData, err)
-	}
-
-	_, err = cb.DB.GetRecipeByName(c.Request().Context(), edited_recipe.Name)
-	if err == nil && edited_recipe.Name != recipe.Name {
-		return ReturnWithFormData(c, newFormData, fmt.Errorf("name already exists"))
-	}
-
-	ingredientsStr := ingredientsToText(edited_recipe.Ingredients)
-	edited_notes := sql.NullString{}
-	slog.Info("edted note", "value", notes, "created", edited_recipe.Notes)
-	if edited_recipe.Notes != "" {
-		slog.Info("notes is not null")
-		edited_notes.Valid = true
-		edited_notes.String = edited_recipe.Notes
-	}
-
-	params := database.EditRecipeParams{
+	editRecipeParams := database.EditRecipeParams{
 		ID:          recipeId,
-		Name:        edited_recipe.Name,
-		Ingredients: ingredientsStr,
-		Steps:       strings.Join(edited_recipe.Steps, "?"),
-		Notes:       edited_notes,
+		Name:        editedRecipe.Name,
+		Ingredients: ComposeIngredientsForDB(editedRecipe.Ingredients),
+		Steps:       strings.Join(editedRecipe.Steps, "?"),
+		Notes: sql.NullString{
+			Valid:  editedRecipe.Notes != "",
+			String: editedRecipe.Notes,
+		},
 	}
-	cb.DB.EditRecipe(c.Request().Context(), params)
 
-	data, err := makePageData(c, cb, userID)
+	dbRecipeEdit, err := cb.DB.EditRecipe(c.Request().Context(), editRecipeParams)
 	if err != nil {
-		return err
+		slog.Error("could not edit recipe", "error", err)
+		return ReturnWithFormData(c, formData, fmt.Errorf("internal server error"))
 	}
-	return c.Render(http.StatusOK, "recipe-grid", data)
 
+	finalRecipe, err := RecipeFromDBRecipe(dbRecipeEdit)
+
+	returnParams := struct {
+		UserID int64
+		Recipe
+	}{
+		userID,
+		finalRecipe,
+	}
+
+	return c.Render(http.StatusOK, "recipe", returnParams)
 }
 
 func (cb *Cookbook) HandlerEditRecipeForm(c echo.Context) error {
@@ -160,72 +153,25 @@ func (cb *Cookbook) HandlerEditRecipeForm(c echo.Context) error {
 		slog.Error("error deleting recipe", "error", err)
 		return err
 	}
-	recipe, err := cb.DB.GetRecipeByID(c.Request().Context(), recipeId)
+
+	params := database.GetUsersRecipeByIDParams{
+		ID:        recipeId,
+		CreatorID: sql.NullInt64{Int64: userID, Valid: true},
+	}
+
+	recipe, err := cb.DB.GetUsersRecipeByID(c.Request().Context(), params)
 	if err != nil {
 		slog.Error("error deleting recipe", "error", err)
 		return err
 	}
 
-	if !recipe.CreatorID.Valid {
-		slog.Error("error deleting recipe", "error", "unauthorized")
-		return c.NoContent(http.StatusUnauthorized)
-	}
-	if userID != recipe.CreatorID.Int64 {
-		slog.Error("error deleting recipe", "error", "unauthorized")
-		return c.NoContent(http.StatusUnauthorized)
-	}
-
-	notes := ""
-	if recipe.Notes.Valid {
-		notes = recipe.Notes.String
-	}
-	formIngredients := strings.ReplaceAll(recipe.Ingredients, "?", "\n")
-	formIngredients = strings.ReplaceAll(formIngredients, ":", " ")
-
-	data := EditRecipeFormData(
-		recipe.ID,
-		recipe.Name,
-		formIngredients,
-		strings.ReplaceAll(recipe.Steps, "?", "\n"),
-		notes,
-	)
-
-	return ReturnWithFormData(c, data, nil)
-}
-
-func (cb *Cookbook) HandlerStartRecipeNameEdit(c echo.Context) error {
-	userID, err := getIDFromContext(c)
+	formData, err := formDataFromDBRecipe(recipe)
+	formData.IsEdit = true
 	if err != nil {
-		return err
-	}
-	recipeIDString := c.Param("id")
-	recipeID, err := strconv.ParseInt(recipeIDString, 10, 64)
-	recipe, err := cb.DB.GetRecipeByID(c.Request().Context(), recipeID)
-
-	if !recipe.CreatorID.Valid || userID != recipe.CreatorID.Int64 {
-		return c.NoContent(http.StatusUnauthorized)
+		return ReturnWithFormData(c, formData, err)
 	}
 
-	data := struct {
-		ID      int64
-		OldName string
-	}{
-		ID:      recipe.ID,
-		OldName: recipe.Name,
-	}
-	return c.Render(http.StatusOK, "recipe-name-box", data)
-}
-
-func (cb *Cookbook) HandlerStartRecipeIngredientsEdit(c echo.Context) error {
-	return c.NoContent(500)
-}
-
-func (cb *Cookbook) HandlerStartRecipeStepsEdit(c echo.Context) error {
-	return c.NoContent(500)
-}
-
-func (cb *Cookbook) HandlerStartRecipeNotesEdit(c echo.Context) error {
-	return c.NoContent(500)
+	return ReturnWithFormData(c, formData, err)
 }
 
 func (cb *Cookbook) HandlerSearchRecipes(c echo.Context) error {
@@ -241,6 +187,14 @@ func (cb *Cookbook) HandlerSearchRecipes(c echo.Context) error {
 		}
 		return c.Render(http.StatusOK, "recipe-grid", data)
 	}
-	recipes := cb.GetFilteredRecipes(name)
-	return c.Render(http.StatusOK, "recipe-search-grid", recipes)
+	recipes := cb.GetFilteredRecipesByName(c, name)
+	if len(recipes) > 21 {
+		data, err := makePageData(c, cb, userID)
+		if err != nil {
+			log.Fatal("something went wrong making page data during serach")
+		}
+		return c.Render(http.StatusOK, "recipe-grid", data)
+	}
+	return c.Render(http.StatusOK, "recipe-search-grid",
+		struct{ Recipes Recipes }{Recipes: recipes})
 }

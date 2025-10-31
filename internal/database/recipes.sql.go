@@ -134,6 +134,44 @@ func (q *Queries) GetAllRecipes(ctx context.Context) ([]Recipe, error) {
 	return items, nil
 }
 
+const getAllUserRecipes = `-- name: GetAllUserRecipes :many
+SELECT id, created_at, updated_at, created_by, name, ingredients, steps, notes, creator_id FROM recipes
+WHERE creator_id = ?
+`
+
+func (q *Queries) GetAllUserRecipes(ctx context.Context, creatorID sql.NullInt64) ([]Recipe, error) {
+	rows, err := q.db.QueryContext(ctx, getAllUserRecipes, creatorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Recipe
+	for rows.Next() {
+		var i Recipe
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.CreatedBy,
+			&i.Name,
+			&i.Ingredients,
+			&i.Steps,
+			&i.Notes,
+			&i.CreatorID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRecipeByID = `-- name: GetRecipeByID :one
 SELECT id, created_at, updated_at, created_by, name, ingredients, steps, notes, creator_id FROM recipes
 WHERE id = ?
@@ -163,6 +201,33 @@ WHERE name = ?
 
 func (q *Queries) GetRecipeByName(ctx context.Context, name string) (Recipe, error) {
 	row := q.db.QueryRowContext(ctx, getRecipeByName, name)
+	var i Recipe
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.CreatedBy,
+		&i.Name,
+		&i.Ingredients,
+		&i.Steps,
+		&i.Notes,
+		&i.CreatorID,
+	)
+	return i, err
+}
+
+const getUsersRecipeByID = `-- name: GetUsersRecipeByID :one
+SELECT id, created_at, updated_at, created_by, name, ingredients, steps, notes, creator_id FROM recipes
+WHERE id = ? AND creator_id = ?
+`
+
+type GetUsersRecipeByIDParams struct {
+	ID        int64
+	CreatorID sql.NullInt64
+}
+
+func (q *Queries) GetUsersRecipeByID(ctx context.Context, arg GetUsersRecipeByIDParams) (Recipe, error) {
+	row := q.db.QueryRowContext(ctx, getUsersRecipeByID, arg.ID, arg.CreatorID)
 	var i Recipe
 	err := row.Scan(
 		&i.ID,

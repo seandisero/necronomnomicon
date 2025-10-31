@@ -1,7 +1,11 @@
 package cookbook
 
 import (
+	"database/sql"
 	"strings"
+
+	"github.com/labstack/echo/v4"
+	"github.com/seandisero/necronomnomicon/internal/database"
 )
 
 type Recipe struct {
@@ -16,18 +20,12 @@ type Recipe struct {
 
 type Recipes = []Recipe
 
-type RecipeFormData struct {
-	ID               int64
-	Name             string
-	ErrorName        string
-	Ingredients      string
-	ErrorIngredients string
-	Steps            string
-	ErrorSteps       string
-	Notes            string
-	ErrorNotes       string
-	IsNew            bool
-	IsEdit           bool
+func (cb *Cookbook) RecipeExists(c echo.Context, recipe Recipe) bool {
+	_, err := cb.DB.GetRecipeByName(c.Request().Context(), recipe.Name)
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func NewRecipe(name string, ingredients []Ingredient, steps []string, notes string) Recipe {
@@ -39,67 +37,71 @@ func NewRecipe(name string, ingredients []Ingredient, steps []string, notes stri
 	}
 }
 
-func CreateRecipe(name, ingredients, steps, notes string) (Recipe, error) {
-	recipe := Recipe{}
-	recipe.Name = name
-	parsedIngredients, err := ParseIngredients(ingredients)
+func RecipeFromDBRecipe(dbRecipe database.Recipe) (Recipe, error) {
+	recipeIngredients, err := ParseIngredientsFromDB(dbRecipe.Ingredients)
 	if err != nil {
 		return Recipe{}, err
 	}
-	parsedSteps := strings.Split(steps, "\n")
+	recipeSteps := strings.Split(dbRecipe.Steps, "?")
+	notes := ""
+	if dbRecipe.Notes.Valid {
+		notes = dbRecipe.Notes.String
+	}
 
-	recipe.Ingredients = parsedIngredients
-	recipe.Steps = parsedSteps
-	recipe.Notes = notes
+	var creatorId int64
+	if dbRecipe.CreatorID.Valid {
+		creatorId = dbRecipe.CreatorID.Int64
+	}
 
-	return recipe, nil
+	r := Recipe{
+		ID:          dbRecipe.ID,
+		CreatedBy:   dbRecipe.CreatedBy,
+		CreatorID:   creatorId,
+		Name:        dbRecipe.Name,
+		Ingredients: recipeIngredients,
+		Steps:       recipeSteps,
+		Notes:       notes,
+	}
+	return r, nil
+
 }
 
-func MakeRecipeFormData(name, ingredients, steps, notes string) RecipeFormData {
-	return RecipeFormData{
-		Name:        name,
+func (cb *Cookbook) AddRecipeToDB(c echo.Context, recipe Recipe, id int64) (Recipe, error) {
+	ingredients := ComposeIngredientsForDB(recipe.Ingredients)
+	steps := strings.Join(recipe.Steps, "?")
+	user, err := cb.DB.GetUserByID(c.Request().Context(), id)
+	if err != nil {
+		return Recipe{}, err
+	}
+
+	var notes sql.NullString
+
+	if recipe.Notes != "" {
+		notes.Valid = true
+		notes.String = recipe.Notes
+	}
+
+	userId := sql.NullInt64{
+		Int64: id,
+		Valid: true,
+	}
+
+	params := database.CreateRecipeParams{
+		Name:        recipe.Name,
 		Ingredients: ingredients,
 		Steps:       steps,
 		Notes:       notes,
+		CreatedBy:   user.Username,
+		CreatorID:   userId,
 	}
-}
 
-func NewRecipeFormData(name, ingredients, steps, notes string) RecipeFormData {
-	return RecipeFormData{
-		Name:        name,
-		Ingredients: ingredients,
-		Steps:       steps,
-		Notes:       notes,
-		IsNew:       true,
+	recipeRow, err := cb.DB.CreateRecipe(c.Request().Context(), params)
+	if err != nil {
+		return Recipe{}, err
 	}
-}
-
-func EditRecipeFormData(id int64, name, ingredients, steps, notes string) RecipeFormData {
-	return RecipeFormData{
-		ID:          id,
-		Name:        name,
-		Ingredients: ingredients,
-		Steps:       steps,
-		Notes:       notes,
-		IsEdit:      true,
+	r, err := RecipeFromDBRecipe(recipeRow)
+	if err != nil {
+		return Recipe{}, err
 	}
-}
-
-func NewRecipeErrorFormData(name, errorName, ingredients, errorIngredients, steps, errorSteps, notes, errorNotes string) RecipeFormData {
-	return RecipeFormData{
-		Name:             name,
-		ErrorName:        errorName,
-		Ingredients:      ingredients,
-		ErrorIngredients: errorIngredients,
-		Steps:            steps,
-		ErrorSteps:       errorSteps,
-		Notes:            notes,
-		ErrorNotes:       errorNotes,
-	}
-}
-
-func EmptyRecipeFormData() RecipeFormData {
-	return RecipeFormData{
-		IsNew: true,
-	}
+	return r, nil
 }

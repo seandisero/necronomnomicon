@@ -30,44 +30,49 @@ func ReturnWithFormData(c echo.Context, data RecipeFormData, err error) error {
 		case "must provide ingredients list":
 			data.ErrorIngredients = err.Error()
 			return c.Render(http.StatusOK, "recipe-form", data)
+		case "unauthorized":
+			data.ErrorIngredients = err.Error()
+			return c.Render(http.StatusUnauthorized, "recipe-form", data)
+		case "internal server error":
+			data.ErrorIngredients = err.Error()
+			return c.Render(http.StatusInternalServerError, "recipe-form", data)
+		default:
+			return c.NoContent(http.StatusInternalServerError)
 		}
 	}
 	return c.Render(http.StatusOK, "recipe-form", data)
 }
 
 func (cb *Cookbook) HandlerPostRecipe(c echo.Context) error {
-	userID, err := getIDFromContext(c)
+	formData := formDataFromContext(c)
+	formData.IsNew = true
+	userId, err := getIDFromContext(c)
 	if err != nil {
-		slog.Error("could nto get user id from context", "error", err)
-		userID = -1
-	}
-	name := c.FormValue("name")
-	ingredients := c.FormValue("ingredients")
-	steps_string := c.FormValue("steps")
-	notes := c.FormValue("notes")
-
-	newFormData := NewRecipeFormData(name, ingredients, steps_string, notes)
-
-	if name == "" {
-		return ReturnWithFormData(c, newFormData, fmt.Errorf("must have a name"))
+		slog.Error("user trying to post recipe without credentials", "error", err)
+		ReturnWithFormData(c, formData, fmt.Errorf("unauthorized"))
 	}
 
-	recipe, err := CreateRecipe(name, ingredients, steps_string, notes)
+	recipe, err := recipeFromFormData(formData)
 	if err != nil {
-		slog.Error("problem creating recipe", "error", err)
-		return ReturnWithFormData(c, newFormData, err)
+		return ReturnWithFormData(c, formData, err)
 	}
 
-	_, err = cb.DB.GetRecipeByName(c.Request().Context(), recipe.Name)
-	if err == nil {
-		return ReturnWithFormData(c, newFormData, fmt.Errorf("name already exists"))
+	if recipeExists := cb.RecipeExists(c, recipe); recipeExists {
+		return ReturnWithFormData(c, formData, fmt.Errorf("name already in use"))
 	}
 
-	cb.AddRecipeToDB(c, recipe, userID)
-
-	data, err := makePageData(c, cb, userID)
+	newRecipe, err := cb.AddRecipeToDB(c, recipe, userId)
 	if err != nil {
-		return err
+		slog.Error("failed to add recipe to DB after validation", "error", err)
+		return ReturnWithFormData(c, formData, err)
 	}
-	return c.Render(http.StatusOK, "recipe-grid", data)
+
+	returnParams := struct {
+		UserID int64
+		Recipe
+	}{
+		userId,
+		newRecipe,
+	}
+	return c.Render(http.StatusOK, "recipe", returnParams)
 }

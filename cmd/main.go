@@ -20,22 +20,6 @@ import (
 	"github.com/tursodatabase/go-libsql"
 )
 
-// func getDB() (*sql.DB, error) {
-// 	dbName := "necro.db"
-// 	dir, err := os.MkdirTemp("", "libsql-*")
-// 	if err != nil {
-// 		slog.Error("could not make temp dir for necro db", "error", err)
-// 		return nil, err
-// 	}
-// 	db_url := os.Getenv("DB_URL")
-// 	db_token := os.Getenv("DB_TOKEN")
-// 	db, err := sql.Open("libsql", db_url+"?authToken="+db_token)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return db, nil
-// }
-
 func OptionalJWTMiddeware() echo.MiddlewareFunc {
 	config := echojwt.Config{
 		Skipper: func(c echo.Context) bool {
@@ -108,11 +92,6 @@ func SetupRouting(e *echo.Echo, cb *cookbook.Cookbook) {
 	r.GET("/recipe/edit/:id", cb.HandlerEditRecipeForm)
 	r.PUT("/recipe/:id", cb.HandlerEditRecipe)
 
-	// recipeEdit.GET("/name", cb.HandlerStartRecipeNameEdit)
-	// recipeEdit.GET("/ingredients", cb.HandlerStartRecipeIngredientsEdit)
-	// recipeEdit.GET("/steps", cb.HandlerStartRecipeStepsEdit)
-	// recipeEdit.GET("/notes", cb.HandlerStartRecipeNotesEdit)
-
 	e.GET("/recipe/load/:index", cb.HendlerLoadMoreRecipes)
 	e.GET("/recipe/grid", cb.HandlerGetRecipeGrid)
 	e.GET("/recipe-form", cb.HandlerGetRecipeForm)
@@ -135,7 +114,6 @@ func main() {
 	defer os.RemoveAll(dir)
 
 	dbPath := filepath.Join(dir, dbName)
-	slog.Info("file path for db", "path", dbPath)
 
 	db_url := os.Getenv("DB_URL")
 	db_token := os.Getenv("DB_TOKEN")
@@ -159,6 +137,7 @@ func main() {
 	}
 
 	cb := cookbook.NewCookbook(db)
+
 	e := echo.New()
 	SetupRouting(e, &cb)
 

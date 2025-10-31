@@ -17,20 +17,6 @@ type Cookbook struct {
 	DB      *database.Queries
 }
 
-type LastItem struct {
-	CanLoadMore bool
-	Recipe      Recipe
-	Index       int
-}
-
-func MakeLastItem(canLoadMore bool, recipe Recipe, idx int) LastItem {
-	return LastItem{
-		CanLoadMore: canLoadMore,
-		Recipe:      recipe,
-		Index:       idx,
-	}
-}
-
 func NewCookbook(db *sql.DB) Cookbook {
 	return Cookbook{
 		Recipes: make([]Recipe, 0),
@@ -38,16 +24,49 @@ func NewCookbook(db *sql.DB) Cookbook {
 	}
 }
 
-func (c *Cookbook) GetFilteredRecipes(name string) Cookbook {
-	cb := Cookbook{
-		Recipes: make([]Recipe, 0),
+func (cb *Cookbook) GetAllRecipesFromDB(c echo.Context) error {
+	dbRecipes, err := cb.DB.GetAllRecipes(c.Request().Context())
+	if err != nil {
+		return err
 	}
-	for _, r := range c.Recipes {
+	recipes := make([]Recipe, len(dbRecipes))
+	for i, dbRecipe := range dbRecipes {
+		recipe, err := RecipeFromDBRecipe(dbRecipe)
+		if err != nil {
+			return err
+		}
+		recipes[i] = recipe
+	}
+	cb.Recipes = recipes
+	return nil
+}
+
+func (cb *Cookbook) GetFilteredRecipesByName(c echo.Context, name string) Recipes {
+	recipes := make([]Recipe, 0)
+	err := cb.GetAllRecipesFromDB(c)
+	if err != nil {
+		return nil
+	}
+	for _, r := range cb.Recipes {
 		if strings.Contains(r.Name, name) {
-			cb.Recipes = append(cb.Recipes, r)
+			recipes = append(recipes, r)
 		}
 	}
-	return cb
+	return recipes
+}
+
+func (cb *Cookbook) GetFilteredRecipesByUserAndName(c echo.Context, name string, userID int64) Recipes {
+	recipes := make([]Recipe, 0)
+	err := cb.GetAllRecipesFromDB(c)
+	if err != nil {
+		return nil
+	}
+	for _, r := range cb.Recipes {
+		if strings.Contains(r.Name, name) && r.CreatorID == userID {
+			recipes = append(recipes, r)
+		}
+	}
+	return recipes
 }
 
 func getIDFromContext(c echo.Context) (int64, error) {
