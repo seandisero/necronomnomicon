@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/labstack/echo/v4"
+	"github.com/seandisero/necronomnomicon/internal/database"
 )
 
 type PageData struct {
@@ -15,8 +16,8 @@ type PageData struct {
 type RecipeGridData struct {
 	DrawLastCard bool
 	Current      int
-	LastCard     Recipe
-	Cards        Recipes
+	LastCard     database.Recipe
+	Cards        []database.Recipe
 }
 
 func NewPageData(authenticated bool, recipeData RecipeGridData) *PageData {
@@ -28,7 +29,7 @@ func NewPageData(authenticated bool, recipeData RecipeGridData) *PageData {
 
 func (cb *Cookbook) drawRecipeData(c echo.Context, startIndex int, id int64) (RecipeGridData, error) {
 	// TODO: filter out recipes for user id
-	userRecipes, err := cb.GetAllRecipes(c)
+	userRecipes, err := cb.DB.GetAllRecipes(c.Request().Context())
 	if err != nil {
 		return RecipeGridData{}, err
 	}

@@ -1,0 +1,12 @@
+{{ block "recipe-deleted-confirm-page" . }}
+<div class="container">
+	<h1>{{ .RecipeName }} has been deleted</h1>
+	<div style="displey: flex; margin: 0 auto;">
+		<button hx-get="/" 
+			hx-swap="innerHTML" 
+			hx-target="body">
+			nice
+		</button>
+	</div>
+</div>
+{{ end }}

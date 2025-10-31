@@ -11,9 +11,9 @@ import (
 )
 
 const createRecipe = `-- name: CreateRecipe :one
-INSERT INTO recipes(name, ingredients, steps, notes, created_by, created_at, updated_at) 
-VALUES (?, ?, ?, ?, ?, DATETIME('now'), DATETIME('now'))
-RETURNING id, created_at, updated_at, created_by, name, ingredients, steps, notes
+INSERT INTO recipes(name, ingredients, steps, notes, created_by, creator_id, created_at, updated_at) 
+VALUES (?, ?, ?, ?, ?, ?, DATETIME('now'), DATETIME('now'))
+RETURNING id, created_at, updated_at, created_by, name, ingredients, steps, notes, creator_id
 `
 
 type CreateRecipeParams struct {
@@ -22,6 +22,7 @@ type CreateRecipeParams struct {
 	Steps       string
 	Notes       sql.NullString
 	CreatedBy   string
+	CreatorID   sql.NullInt64
 }
 
 func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (Recipe, error) {
@@ -31,6 +32,7 @@ func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (Rec
 		arg.Steps,
 		arg.Notes,
 		arg.CreatedBy,
+		arg.CreatorID,
 	)
 	var i Recipe
 	err := row.Scan(
@@ -42,12 +44,61 @@ func (q *Queries) CreateRecipe(ctx context.Context, arg CreateRecipeParams) (Rec
 		&i.Ingredients,
 		&i.Steps,
 		&i.Notes,
+		&i.CreatorID,
+	)
+	return i, err
+}
+
+const deleteRecipe = `-- name: DeleteRecipe :exec
+DELETE FROM recipes
+WHERE id = ?
+`
+
+func (q *Queries) DeleteRecipe(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteRecipe, id)
+	return err
+}
+
+const editRecipe = `-- name: EditRecipe :one
+UPDATE recipes
+SET name = ?, ingredients = ?, steps = ?, notes = ?, updated_at = DATETIME('now')
+WHERE id = ?
+RETURNING id, created_at, updated_at, created_by, name, ingredients, steps, notes, creator_id
+`
+
+type EditRecipeParams struct {
+	Name        string
+	Ingredients string
+	Steps       string
+	Notes       sql.NullString
+	ID          int64
+}
+
+func (q *Queries) EditRecipe(ctx context.Context, arg EditRecipeParams) (Recipe, error) {
+	row := q.db.QueryRowContext(ctx, editRecipe,
+		arg.Name,
+		arg.Ingredients,
+		arg.Steps,
+		arg.Notes,
+		arg.ID,
+	)
+	var i Recipe
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.CreatedBy,
+		&i.Name,
+		&i.Ingredients,
+		&i.Steps,
+		&i.Notes,
+		&i.CreatorID,
 	)
 	return i, err
 }
 
 const getAllRecipes = `-- name: GetAllRecipes :many
-SELECT id, created_at, updated_at, created_by, name, ingredients, steps, notes FROM recipes
+SELECT id, created_at, updated_at, created_by, name, ingredients, steps, notes, creator_id FROM recipes
 `
 
 func (q *Queries) GetAllRecipes(ctx context.Context) ([]Recipe, error) {
@@ -68,6 +119,7 @@ func (q *Queries) GetAllRecipes(ctx context.Context) ([]Recipe, error) {
 			&i.Ingredients,
 			&i.Steps,
 			&i.Notes,
+			&i.CreatorID,
 		); err != nil {
 			return nil, err
 		}
@@ -82,8 +134,30 @@ func (q *Queries) GetAllRecipes(ctx context.Context) ([]Recipe, error) {
 	return items, nil
 }
 
+const getRecipeByID = `-- name: GetRecipeByID :one
+SELECT id, created_at, updated_at, created_by, name, ingredients, steps, notes, creator_id FROM recipes
+WHERE id = ?
+`
+
+func (q *Queries) GetRecipeByID(ctx context.Context, id int64) (Recipe, error) {
+	row := q.db.QueryRowContext(ctx, getRecipeByID, id)
+	var i Recipe
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.CreatedBy,
+		&i.Name,
+		&i.Ingredients,
+		&i.Steps,
+		&i.Notes,
+		&i.CreatorID,
+	)
+	return i, err
+}
+
 const getRecipeByName = `-- name: GetRecipeByName :one
-SELECT id, created_at, updated_at, created_by, name, ingredients, steps, notes FROM recipes
+SELECT id, created_at, updated_at, created_by, name, ingredients, steps, notes, creator_id FROM recipes
 WHERE name = ?
 `
 
@@ -99,6 +173,7 @@ func (q *Queries) GetRecipeByName(ctx context.Context, name string) (Recipe, err
 		&i.Ingredients,
 		&i.Steps,
 		&i.Notes,
+		&i.CreatorID,
 	)
 	return i, err
 }

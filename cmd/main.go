@@ -89,6 +89,9 @@ func SetupRouting(e *echo.Echo, cb *cookbook.Cookbook) {
 	r := e.Group("")
 	r.Use(NonOptionalJWTMiddleware())
 
+	recipeEdit := e.Group("/recipe/edit/:id")
+	recipeEdit.Use(NonOptionalJWTMiddleware())
+
 	e.GET("/", cb.HandlerGetHome)
 	e.GET("/main", cb.HandlerGetMainPage)
 
@@ -99,8 +102,16 @@ func SetupRouting(e *echo.Echo, cb *cookbook.Cookbook) {
 	e.GET("/signup", cb.HandlerGetSignUpPage)
 	e.POST("/signup", cb.HandlerCreateUser)
 
-	e.GET("/recipe", cb.HandlerGetRecipe)
 	r.POST("/recipe", cb.HandlerPostRecipe)
+	e.GET("/recipe/:id", cb.HandlerGetRecipe)
+	r.DELETE("/recipe/:id", cb.HandlerDeleteRecipe)
+	r.GET("/recipe/edit/:id", cb.HandlerEditRecipeForm)
+	r.PUT("/recipe/:id", cb.HandlerEditRecipe)
+
+	// recipeEdit.GET("/name", cb.HandlerStartRecipeNameEdit)
+	// recipeEdit.GET("/ingredients", cb.HandlerStartRecipeIngredientsEdit)
+	// recipeEdit.GET("/steps", cb.HandlerStartRecipeStepsEdit)
+	// recipeEdit.GET("/notes", cb.HandlerStartRecipeNotesEdit)
 
 	e.GET("/recipe/load/:index", cb.HendlerLoadMoreRecipes)
 	e.GET("/recipe/grid", cb.HandlerGetRecipeGrid)
@@ -132,6 +143,7 @@ func main() {
 	connector, err := libsql.NewEmbeddedReplicaConnector(dbPath, db_url,
 		libsql.WithAuthToken(db_token),
 		libsql.WithSyncInterval(30*time.Minute),
+		libsql.WithEncryption("ENCRYPTION_STRING"),
 	)
 	if err != nil {
 		slog.Error("error creating connector", "error", err)

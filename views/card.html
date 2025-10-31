@@ -1,7 +1,8 @@
 {{ block "card" . }}
-<div hx-get="/recipe?name={{ .Name }}" hx-target="#recipe-grid-div" hx-swap="outerHTML" class="card">
-	<h3 class="text-accent", style="text-align: center;">
+<div hx-get="/recipe/{{ .ID }}" hx-target="#recipe-grid-div" hx-swap="outerHTML" class="card">
+	<h3 class="text-accent", style="text-align: left;">
 		{{ .Name }}
 	</h3>
+	<text style="text-align: left;">created by: {{ .CreatedBy }}</text>
 </div>
 {{ end }}

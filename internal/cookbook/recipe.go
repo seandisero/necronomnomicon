@@ -5,15 +5,19 @@ import (
 )
 
 type Recipe struct {
+	ID          int64
 	Name        string       `json:"name"`
 	Ingredients []Ingredient `json:"ingredients"`
 	Steps       []string     `json:"steps"`
 	Notes       string       `json:"notes"`
+	CreatedBy   string       `json:"created_by"`
+	CreatorID   int64        `json:"creator_id"`
 }
 
 type Recipes = []Recipe
 
 type RecipeFormData struct {
+	ID               int64
 	Name             string
 	ErrorName        string
 	Ingredients      string
@@ -22,6 +26,8 @@ type RecipeFormData struct {
 	ErrorSteps       string
 	Notes            string
 	ErrorNotes       string
+	IsNew            bool
+	IsEdit           bool
 }
 
 func NewRecipe(name string, ingredients []Ingredient, steps []string, notes string) Recipe {
@@ -44,8 +50,18 @@ func CreateRecipe(name, ingredients, steps, notes string) (Recipe, error) {
 
 	recipe.Ingredients = parsedIngredients
 	recipe.Steps = parsedSteps
+	recipe.Notes = notes
 
 	return recipe, nil
+}
+
+func MakeRecipeFormData(name, ingredients, steps, notes string) RecipeFormData {
+	return RecipeFormData{
+		Name:        name,
+		Ingredients: ingredients,
+		Steps:       steps,
+		Notes:       notes,
+	}
 }
 
 func NewRecipeFormData(name, ingredients, steps, notes string) RecipeFormData {
@@ -54,6 +70,18 @@ func NewRecipeFormData(name, ingredients, steps, notes string) RecipeFormData {
 		Ingredients: ingredients,
 		Steps:       steps,
 		Notes:       notes,
+		IsNew:       true,
+	}
+}
+
+func EditRecipeFormData(id int64, name, ingredients, steps, notes string) RecipeFormData {
+	return RecipeFormData{
+		ID:          id,
+		Name:        name,
+		Ingredients: ingredients,
+		Steps:       steps,
+		Notes:       notes,
+		IsEdit:      true,
 	}
 }
 
@@ -71,5 +99,7 @@ func NewRecipeErrorFormData(name, errorName, ingredients, errorIngredients, step
 }
 
 func EmptyRecipeFormData() RecipeFormData {
-	return RecipeFormData{}
+	return RecipeFormData{
+		IsNew: true,
+	}
 }

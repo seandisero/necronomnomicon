@@ -1,6 +1,11 @@
 {{ block "recipe-form" . }}
 <form 
+	{{ if .IsNew }}
 	hx-post="/recipe" 
+	{{ end }}
+	{{ if .IsEdit }}
+	hx-put="/recipe/{{ .ID }}"
+	{{ end }}
 	hx-target="#recipes"
 	hx-swap="innerHTML" >
 	<input 
@@ -31,12 +36,13 @@
 		placeholder="notes on the recipe here..."
 	>{{ if .Notes }}{{ .Notes }}{{ end }}</textarea>
 	{{ if .ErrorNotes }}<span class="error-message">{{ .ErrorNotes }}</span>{{ end }}
-	<div style="displey: flex; margin: 0 auto;">
-		<button class="btn-primary" 
-			type="submit" 
-			style="margin: 0 auto;">
-			add recipe
-		</button>
+	<div style="display: grid; margin: 0 auto; grid-template-columns: 1fr 1fr;">
+		{{ if .IsNew }}
+			{{ template "new-recipe-form-button" . }}
+		{{ end }}
+		{{ if .IsEdit }}
+			{{ template "edit-recipe-form-button" . }}
+		{{ end }}
 		<button hx-get="/main" 
 			hx-target="#main-page"
 			hx-swap="innerHTML" 
@@ -45,4 +51,18 @@
 		</button>
 	</div>
 </form>
+{{ end }}
+
+{{ block "new-recipe-form-button" . }}
+<button class="btn-primary" 
+	type="submit" 
+	style="margin: 0 auto;">add recipe
+</button>
+{{ end }}
+
+{{ block "edit-recipe-form-button" . }}
+<button class="btn-primary" 
+	type="submit" 
+	style="margin: 0 auto;">edit recipe
+</button>
 {{ end }}

@@ -1,8 +1,9 @@
 {{ block "signup-form" . }}
-<div id="signup-page">
+<div id="signup-page" class="container" style="margin-top: 10%">
 	<form hx-post="/signup"
 		hx-swap="innerHTML"
-		hx-target="#main-page">
+		hx-target="body">
+		<h3 style="text-align: center;">sign up with username and passowrd</h3>
 		<input type="text" name="name" placeholder="name...">
 		<input type="text" name="password" placeholder="password...">
 		<div style="displey: flex; margin: 0 auto;">
@@ -12,7 +13,7 @@
 				submit</button>
 			<button hx-get="/main" 
 				hx-swap="innerHTML" 
-				hx-target="#main-page">
+				hx-target="body">
 				cancel
 			</button>
 		</div>

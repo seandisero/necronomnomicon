@@ -1,6 +1,6 @@
 {{ block "nav-bar" . }}
-<nav>
-	<div>
+<nav class="top-nav">
+	<div >
 		{{ template "login-bar" . }}
 		{{ if .IsAuthenticated }}
 		<button hx-get="/recipe-form" 

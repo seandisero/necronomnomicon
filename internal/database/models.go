@@ -18,6 +18,7 @@ type Recipe struct {
 	Ingredients string
 	Steps       string
 	Notes       sql.NullString
+	CreatorID   sql.NullInt64
 }
 
 type User struct {

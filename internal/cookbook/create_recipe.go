@@ -61,7 +61,15 @@ func RecipeFromDBRecipe(dbRecipe database.Recipe) (Recipe, error) {
 		notes = dbRecipe.Notes.String
 	}
 
+	var creatorId int64
+	if dbRecipe.CreatorID.Valid {
+		creatorId = dbRecipe.CreatorID.Int64
+	}
+
 	r := Recipe{
+		ID:          dbRecipe.ID,
+		CreatedBy:   dbRecipe.CreatedBy,
+		CreatorID:   creatorId,
 		Name:        dbRecipe.Name,
 		Ingredients: recipeIngredients,
 		Steps:       recipeSteps,
@@ -86,12 +94,18 @@ func (cb *Cookbook) AddRecipeToDB(c echo.Context, recipe Recipe, id int64) (Reci
 		notes.String = recipe.Notes
 	}
 
+	userId := sql.NullInt64{
+		Int64: id,
+		Valid: true,
+	}
+
 	params := database.CreateRecipeParams{
 		Name:        recipe.Name,
 		Ingredients: ingredients,
 		Steps:       steps,
 		Notes:       notes,
 		CreatedBy:   user.Username,
+		CreatorID:   userId,
 	}
 
 	recipeRow, err := cb.DB.CreateRecipe(c.Request().Context(), params)

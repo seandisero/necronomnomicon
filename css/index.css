@@ -63,9 +63,8 @@ h1 {
 	font-size: 2.5rem;
 	border-bottom: 2px solid var(--accent-primary);
 	padding-bottom: 0.5rem;
-	margin-top: 80px;
+	margin-top: 96px;
 }
-
 
 h3 {
 	word-spacing: 10px;
@@ -105,6 +104,15 @@ ul {
 
 ol {
 	padding-left: 3rem;
+}
+
+.top-nav {
+    line-height: 30px;
+    border-bottom: 1px solid var(--accent-primary);
+    margin: 0px;
+    background-image: var(--bg-primary);
+    box-shadow: 0px 4px 15px 0px var(--accent-dark);
+    margin-bottom: 1em;
 }
 
 /* Buttons */
@@ -153,6 +161,19 @@ input, textarea, select {
 	transition: all 0.3s ease;
 	margin: 0.33rem auto 1rem auto;
 	width: 66%
+}
+
+.edit-input {
+	background-color: var(--bg-secondary);
+	color: var(--text-primary);
+	border: 1px solid var(--border-primary);
+	padding: 0.75rem 1.5rem;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 1rem;
+	transition: all 0.3s ease;
+	margin-top: 0rem; 
+	width: 100%;
 }
 
 input:focus, textarea:focus, select:focus {
@@ -230,7 +251,7 @@ select[autocomplete]:autofill {
 
 /* Cards */
 .card {
-	text-align: center;
+	text-align: left;
 	width: 100%;
 	background-color: var(--bg-secondary);
 	border: 1px solid var(--border-primary);

@@ -1,14 +1,20 @@
 {{ block "recipe" . }}
 <div id="recipe-instructions" class="recipe-content">
-	<div style="display: grid; grid-template-columns: 5fr 1fr;">
-		<h2>{{ .Name }}</h2>
-		<button 
-			hx-get="/recipe/grid" 
-			hx-swap="outerHTML" 
-			hx-target="#recipe-instructions"
-			style="display: flex; margin: 0 auto; margin-bottom: 1rem;">
-			back
-		</button>
+	<div style="display: grid; grid-template-columns: 5fr 3fr;">
+		{{ template "recipe-name" . }}
+		<div style="display: grid; grid-template-columns: 1fr 1fr 1fr;">
+			<button 
+				hx-get="/recipe/grid" 
+				hx-swap="outerHTML" 
+				hx-target="#recipe-instructions"
+				style="display: flex; margin: 0 auto; margin-bottom: 1rem;">
+				back
+			</button>
+			{{ if eq .CreatorID .UserID }}
+				{{ template "recipe-delete-button" . }}
+				{{ template "recipe-edit-button" . }}
+			{{ end }}
+		</div>
 	</div>
 	<hr/>
 	<h3>&nbsp;ingredients</h3>
@@ -42,3 +48,47 @@
 </div>
 {{ end }}
 
+{{ block "recipe-delete-button" . }}
+<button 
+	hx-delete="/recipe/{{ .ID }}" 
+	hx-swap="outerHTML" 
+	hx-target="#recipe-instructions"
+	style="display: flex; margin: 0 auto; margin-bottom: 1rem;">
+	delete
+</button>
+{{ end }}
+
+{{ block "recipe-edit-button" . }}
+<button 
+	hx-get="/recipe/edit/{{ .ID }}" 
+	hx-swap="outerHTML" 
+	hx-target="#recipe-instructions"
+	style="display: flex; margin: 0 auto; margin-bottom: 1rem;">
+	edit
+</button>
+{{ end }}
+
+{{ block "recipe-name" . }}
+<!-- <h2 id="recipe-name" hx-get="/recipe/edit/{{ .ID }}/name" hx-swap="outerHTML">{{ .Name }}</h2> -->
+<h2 id="recipe-name">{{ .Name }}</h2>
+{{ end }}
+
+{{ block "recipe-name-box" . }}
+<div id="recipeNameBox" style="display: grid; grid-template-columns: 3fr 1fr;">
+	<input 
+		type="text" 
+		name="name" 
+		id="recipe-name-box" 
+		hx-put="/recipe/{{ .ID }}" 
+		hx-swap="outerHTML" 
+		hx-target="#recipeNameBox"
+		value="{{ .OldName }}"
+		class="edit-input"></input>
+	<button 
+		hx-get="/recipe/namebox"
+		hx-swap="outerHTML"
+		hx-target="#recipeNameBox"
+		style="display: flex; margin: 0 auto; margin-bottom: 1rem;"
+	>cancel</button>
+</div>
+{{end}}
