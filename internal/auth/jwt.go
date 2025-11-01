@@ -2,7 +2,6 @@ package auth
 
 import (
 	"fmt"
-	"log/slog"
 	"strconv"
 	"time"
 
@@ -80,8 +79,6 @@ func validateJWT(tokenString, tokenSecret string) (int64, error) {
 	if issuer != string(TokenTypeAccess) {
 		return -1, fmt.Errorf("invalid issuer")
 	}
-
-	slog.Info("got user id string", "ID", userIDString)
 
 	userID, err := strconv.ParseInt(userIDString, 10, 64)
 	if err != nil {

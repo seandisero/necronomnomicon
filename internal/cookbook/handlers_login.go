@@ -41,7 +41,6 @@ func (cb *Cookbook) HandlerLogin(c echo.Context) error {
 	if err != nil {
 		return c.Render(http.StatusOK, "index", nil)
 	}
-	slog.Info("rendering page")
 	return c.Render(http.StatusOK, "index", data)
 }
 
