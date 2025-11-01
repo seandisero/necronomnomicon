@@ -87,10 +87,3 @@ func makePageDataFromIndex(c echo.Context, cb *Cookbook, index int, id int64) (*
 	pageData := NewPageData(authenticated, recipeData)
 	return pageData, nil
 }
-
-func getUserRecipes(userID int) Recipes {
-	// TODO: get users recipes from db
-	// TODO: have last viewed first in the list
-	// TODO: cache users recipes for quick access.
-	return Recipes{}
-}

@@ -2,6 +2,7 @@ package cookbook
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -17,11 +18,13 @@ func (cb *Cookbook) HendlerLoadMoreRecipes(c echo.Context) error {
 	index := c.Param("index")
 	idx, err := strconv.Atoi(index)
 	if err != nil {
+		slog.Error("error converting string (%s) to int", "error", err)
 		return err
 	}
 
 	data, err := cb.drawRecipeData(c, idx+1, userID)
 	if err != nil {
+		slog.Error("error loading more recipes", "error", err)
 		c.Render(http.StatusBadRequest, "more-cards", data)
 		return fmt.Errorf("no more recipe data")
 	}

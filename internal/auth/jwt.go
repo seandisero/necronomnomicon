@@ -2,6 +2,8 @@ package auth
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
 	"strconv"
 	"time"
 
@@ -13,12 +15,11 @@ type TokenType string
 
 const TokenTypeAccess TokenType = "necro-access"
 
-const TokenSecretString string = "SecretString"
-
 const JWTExpireTime time.Duration = 24 * time.Hour
 
 func MakeJWT(userID int64) (string, error) {
-	return makeJWT(userID, TokenSecretString, JWTExpireTime)
+	tokenSecretString := os.Getenv("JWT_SECRET")
+	return makeJWT(userID, tokenSecretString, JWTExpireTime)
 }
 
 func makeJWT(userID int64, tokenSecret string, expiresIn time.Duration) (string, error) {
@@ -27,16 +28,17 @@ func makeJWT(userID int64, tokenSecret string, expiresIn time.Duration) (string,
 	webToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    string(TokenTypeAccess),
 		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(expiresIn)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Second)),
 		Subject:   userIDString,
 	})
 	return webToken.SignedString(signingKey)
 }
 
-func ParseToken(c echo.Context, tokenString string) (interface{}, error) {
+func ParseToken(c echo.Context, tokenString string) (any, error) {
+	tokenSecretString := os.Getenv("JWT_SECRET")
 	claims := jwt.RegisteredClaims{}
-	keyFunk := func(token *jwt.Token) (interface{}, error) {
-		return []byte(TokenSecretString), nil
+	keyFunk := func(token *jwt.Token) (any, error) {
+		return []byte(tokenSecretString), nil
 	}
 	token, err := jwt.ParseWithClaims(
 		tokenString,
@@ -50,7 +52,8 @@ func ParseToken(c echo.Context, tokenString string) (interface{}, error) {
 }
 
 func ValidateJWT(tokenString string) (int64, error) {
-	return validateJWT(tokenString, TokenSecretString)
+	tokenSecretString := os.Getenv("JWT_SECRET")
+	return validateJWT(tokenString, tokenSecretString)
 }
 
 func validateJWT(tokenString, tokenSecret string) (int64, error) {
@@ -64,6 +67,7 @@ func validateJWT(tokenString, tokenSecret string) (int64, error) {
 		keyFunk,
 	)
 	if err != nil {
+		slog.Error("JWT: parse with claims threw", "error", err)
 		return -1, err
 	}
 

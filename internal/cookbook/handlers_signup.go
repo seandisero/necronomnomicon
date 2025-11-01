@@ -38,6 +38,10 @@ func (cb *Cookbook) HandlerCreateUser(c echo.Context) error {
 	slog.Info("created user", "username", user.Username, "id", user.ID)
 
 	jwt, err := auth.MakeJWT(user.ID)
+	if err != nil {
+		slog.Error("error making jwt during signup", "error", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
 	cookie := new(http.Cookie)
 	cookie.Name = "necro-auth"
 	cookie.Value = jwt

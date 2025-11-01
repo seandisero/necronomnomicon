@@ -22,10 +22,7 @@ type Recipes = []Recipe
 
 func (cb *Cookbook) RecipeExists(c echo.Context, recipe Recipe) bool {
 	_, err := cb.DB.GetRecipeByName(c.Request().Context(), recipe.Name)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func NewRecipe(name string, ingredients []Ingredient, steps []string, notes string) Recipe {

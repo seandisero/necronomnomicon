@@ -8,9 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
-	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/seandisero/necronomnomicon/internal/auth"
@@ -20,48 +18,16 @@ import (
 	"github.com/tursodatabase/go-libsql"
 )
 
-func OptionalJWTErrorHandler(c echo.Context, err error) error {
-	if err.Error() == "invalid or expired jwt" {
-		return nil
-	}
-	return nil
-}
-
-func OptionalJWTMiddeware() echo.MiddlewareFunc {
-	config := echojwt.Config{
-		Skipper: func(c echo.Context) bool {
-			// sincd the jwt is optional we should always skip.
-			return true
-		},
-		SigningKey:   []byte(auth.TokenSecretString),
-		TokenLookup:  "cookie:necro-auth",
-		ErrorHandler: OptionalJWTErrorHandler,
-		NewClaimsFunc: func(c echo.Context) jwt.Claims {
-			return new(jwt.RegisteredClaims)
-		},
-	}
-	return echojwt.WithConfig(config)
-}
-
-func NonOptionalJWTMiddleware() echo.MiddlewareFunc {
-	jwtConfig := echojwt.Config{
-		SigningKey:  []byte(auth.TokenSecretString),
-		TokenLookup: "cookie:necro-auth",
-		NewClaimsFunc: func(c echo.Context) jwt.Claims {
-			return new(jwt.RegisteredClaims)
-		},
-	}
-	return echojwt.WithConfig(jwtConfig)
-}
-
 func EchoLogger() echo.MiddlewareFunc {
+	// TODO: newer config is RequestLoggerConfig{}
 	loggerConfig := middleware.LoggerConfig{
 		Skipper: middleware.DefaultSkipper,
 		Format: `{"status":${status},` +
 			`"method":"${method}","uri":"${uri}",` +
-			`"error":"${error}","latency":${latency},"latency_human":"${latency_human}"` +
+			`"error_msg":"${error}","latency":${latency},"latency_human":"${latency_human}"` +
 			`,"bytes_in":${bytes_in},"bytes_out":${bytes_out}}` + "\n",
 	}
+	// TODO: this should be changed to middleware.RequestLoggerWithConfig()
 	return middleware.LoggerWithConfig(loggerConfig)
 }
 
@@ -70,13 +36,10 @@ func SetupRouting(e *echo.Echo, cb *cookbook.Cookbook) {
 	e.Renderer = tmpl.NewTemplate()
 
 	e.Use(EchoLogger())
-	e.Use(OptionalJWTMiddeware())
+	e.Use(auth.OptionalJWTMiddeware())
 
 	r := e.Group("")
-	r.Use(NonOptionalJWTMiddleware())
-
-	recipeEdit := e.Group("/recipe/edit/:id")
-	recipeEdit.Use(NonOptionalJWTMiddleware())
+	r.Use(auth.NonOptionalJWTMiddleware())
 
 	e.GET("/", cb.HandlerGetHome)
 	e.GET("/main", cb.HandlerGetMainPage)
@@ -101,7 +64,10 @@ func SetupRouting(e *echo.Echo, cb *cookbook.Cookbook) {
 }
 
 func main() {
-	godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		slog.Info("no .env file found, using global env variables", "error", err)
+	}
 	port := os.Getenv("PORT")
 	if port == "" {
 		log.Fatal("could not get port")

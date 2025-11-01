@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
+	"math"
 	"strings"
 
 	"golang.org/x/crypto/argon2"
@@ -40,6 +41,20 @@ func HashPassword(password string) (string, error) {
 	)
 
 	return encodedHash, nil
+}
+
+func castToUint32(val int) (uint32, error) {
+	if val > math.MaxUint32 || val < 0 {
+		return 0, fmt.Errorf("val (%d) is greater than max uint32 (%d)", val, math.MaxUint32)
+	}
+	return uint32(val), nil
+}
+
+func castToUint8(val int) (uint8, error) {
+	if val > math.MaxUint8 || val < 0 {
+		return 0, fmt.Errorf("val (%d) is greater than max uint8 (%d)", val, math.MaxUint8)
+	}
+	return uint8(val), nil
 }
 
 func ValidatePassword(password, hash string) (bool, error) {
@@ -82,10 +97,23 @@ func ValidatePassword(password, hash string) (bool, error) {
 		return false, fmt.Errorf("mismatch argon2 version")
 	}
 
+	time32, err := castToUint32(time)
+	if err != nil {
+		return false, err
+	}
+	mem32, err := castToUint32(memory)
+	if err != nil {
+		return false, err
+	}
+	threads32, err := castToUint8(threads)
+	if err != nil {
+		return false, err
+	}
+
 	pHash := argon2.IDKey([]byte(password), []byte(decodedSalt),
-		uint32(time),
-		uint32(memory),
-		uint8(threads),
+		time32,
+		mem32,
+		threads32,
 		authParams.keyLength,
 	)
 	if subtle.ConstantTimeCompare(decodedHash, []byte(pHash)) == 1 {

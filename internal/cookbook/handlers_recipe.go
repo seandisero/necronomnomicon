@@ -15,8 +15,15 @@ import (
 
 func (cb *Cookbook) HandlerGetRecipe(c echo.Context) error {
 	userID, err := getIDFromContext(c)
+	if err != nil {
+		slog.Warn("HandlerGetRecipe: user not signed in", "default id", userID)
+	}
 	idString := c.Param("id")
 	id, err := strconv.ParseInt(idString, 10, 64)
+	if err != nil {
+		slog.Error("could not parse int to string", "intstr", idString)
+		return err
+	}
 	dbRecipe, err := cb.DB.GetRecipeByID(c.Request().Context(), id)
 	if err != nil {
 		return err
@@ -38,6 +45,10 @@ func (cb *Cookbook) HandlerGetRecipe(c echo.Context) error {
 func (cb *Cookbook) HandlerDeleteRecipe(c echo.Context) error {
 	// TODO: this still needs work
 	userID, err := getIDFromContext(c)
+	if err != nil {
+		slog.Warn("HandlerDeletRecipe threw error getting id from context", "error", err)
+		return c.NoContent(http.StatusUnauthorized)
+	}
 	idString := c.Param("id")
 	recipeId, err := strconv.ParseInt(idString, 10, 64)
 	if err != nil {
@@ -133,6 +144,10 @@ func (cb *Cookbook) HandlerEditRecipe(c echo.Context) error {
 	}
 
 	finalRecipe, err := RecipeFromDBRecipe(dbRecipeEdit)
+	if err != nil {
+		slog.Error("MALFORMED RECIPE IN DB: %s, id: %d", dbRecipeEdit.Name, dbRecipeEdit.ID)
+		return c.NoContent(http.StatusInternalServerError)
+	}
 
 	returnParams := struct {
 		UserID int64
@@ -147,6 +162,10 @@ func (cb *Cookbook) HandlerEditRecipe(c echo.Context) error {
 
 func (cb *Cookbook) HandlerEditRecipeForm(c echo.Context) error {
 	userID, err := getIDFromContext(c)
+	if err != nil {
+		slog.Warn("HandlerEditRecipeForm threw error getting id from context", "error", err)
+		return c.NoContent(http.StatusUnauthorized)
+	}
 	idString := c.Param("id")
 	recipeId, err := strconv.ParseInt(idString, 10, 64)
 	if err != nil {

@@ -23,12 +23,19 @@ func (cb *Cookbook) HandlerLogin(c echo.Context) error {
 
 	valid, err := auth.ValidatePassword(password, user.HashedPassword)
 	if !valid {
+		if err != nil {
+			slog.Error("error validating password", "error", err)
+		}
 		// TODO: this section should keep the user on the loging page with a
 		// error that the password was wrong.
 		return c.Render(http.StatusBadRequest, "index", nil)
 	}
 
 	jwt, err := auth.MakeJWT(user.ID)
+	if err != nil {
+		slog.Error("error making jwt", "error", err)
+		return c.Render(http.StatusInternalServerError, "index", nil)
+	}
 	cookie := new(http.Cookie)
 	cookie.Name = "necro-auth"
 	cookie.HttpOnly = true
