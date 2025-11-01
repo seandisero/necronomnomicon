@@ -33,6 +33,7 @@ func EchoLogger() echo.MiddlewareFunc {
 
 func SetupRouting(e *echo.Echo, cb *cookbook.Cookbook) {
 	e.Static("/css", "css")
+	e.Static("/images", "images")
 	e.Renderer = tmpl.NewTemplate()
 
 	e.Use(EchoLogger())
@@ -43,6 +44,10 @@ func SetupRouting(e *echo.Echo, cb *cookbook.Cookbook) {
 
 	e.GET("/", cb.HandlerGetHome)
 	e.GET("/main", cb.HandlerGetMainPage)
+
+	e.GET("/favicon.ico", func(c echo.Context) error {
+		return c.File("images/necronomnom_icon.png")
+	})
 
 	e.GET("/login", cb.HandlerGetLoginPage)
 	e.POST("/login", cb.HandlerLogin)

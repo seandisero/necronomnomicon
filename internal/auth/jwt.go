@@ -28,7 +28,7 @@ func makeJWT(userID int64, tokenSecret string, expiresIn time.Duration) (string,
 	webToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    string(TokenTypeAccess),
 		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Second)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(expiresIn)),
 		Subject:   userIDString,
 	})
 	return webToken.SignedString(signingKey)
