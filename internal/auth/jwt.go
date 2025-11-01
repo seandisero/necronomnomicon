@@ -16,8 +16,10 @@ const TokenTypeAccess TokenType = "necro-access"
 
 const TokenSecretString string = "SecretString"
 
+const JWTExpireTime time.Duration = 24 * time.Hour
+
 func MakeJWT(userID int64) (string, error) {
-	return makeJWT(userID, TokenSecretString, 24*time.Hour)
+	return makeJWT(userID, TokenSecretString, JWTExpireTime)
 }
 
 func makeJWT(userID int64, tokenSecret string, expiresIn time.Duration) (string, error) {

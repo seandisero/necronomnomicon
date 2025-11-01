@@ -71,7 +71,7 @@ func (cb *Cookbook) GetFilteredRecipesByUserAndName(c echo.Context, name string,
 
 func getIDFromContext(c echo.Context) (int64, error) {
 	if c.Get("user") == nil {
-		slog.Info("c.Get('user') is nil, user is not logged in")
+		slog.Warn("c.Get('user') is nil, user is not logged in")
 		return -1, nil
 	}
 	user := c.Get("user").(*jwt.Token)
@@ -86,11 +86,6 @@ func (cb *Cookbook) HandlerGetHome(c echo.Context) error {
 	userID, err := getIDFromContext(c)
 	if err != nil {
 		slog.Error("error getting id from context", "error", err)
-	}
-	if userID != -1 {
-		slog.Info("got user ID", "id", userID)
-	} else {
-		slog.Info("did not get user id", "id", userID)
 	}
 
 	data, err := makePageData(c, cb, userID)

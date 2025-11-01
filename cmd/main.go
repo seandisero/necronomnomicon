@@ -20,20 +20,22 @@ import (
 	"github.com/tursodatabase/go-libsql"
 )
 
+func OptionalJWTErrorHandler(c echo.Context, err error) error {
+	if err.Error() == "invalid or expired jwt" {
+		return nil
+	}
+	return nil
+}
+
 func OptionalJWTMiddeware() echo.MiddlewareFunc {
 	config := echojwt.Config{
 		Skipper: func(c echo.Context) bool {
-			cookie, err := c.Cookie("necro-auth")
-			if err != nil {
-				return true
-			}
-			if cookie.Value == "" {
-				return true
-			}
-			return false
+			// sincd the jwt is optional we should always skip.
+			return true
 		},
-		SigningKey:  []byte(auth.TokenSecretString),
-		TokenLookup: "cookie:necro-auth",
+		SigningKey:   []byte(auth.TokenSecretString),
+		TokenLookup:  "cookie:necro-auth",
+		ErrorHandler: OptionalJWTErrorHandler,
 		NewClaimsFunc: func(c echo.Context) jwt.Claims {
 			return new(jwt.RegisteredClaims)
 		},
